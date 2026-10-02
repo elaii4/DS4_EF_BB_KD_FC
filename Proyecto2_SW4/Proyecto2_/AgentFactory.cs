@@ -2,7 +2,6 @@ using System;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Google.GenAI;
-using Mscc.GenerativeAI.Microsoft;
 
 namespace Proyecto2_
 {

@@ -83,7 +83,15 @@ namespace Proyecto2_
                 {
                     try
                     {
-                        var response = await _agente.RunAsync(userText, _sesion);
+                        var runTask = System.Threading.Tasks.Task.Run(() => _agente.RunAsync(userText, _sesion));
+                        var timeoutTask = System.Threading.Tasks.Task.Delay(60000); // 60 segundos timeout
+                        
+                        if (await System.Threading.Tasks.Task.WhenAny(runTask, timeoutTask) == timeoutTask)
+                        {
+                            throw new TimeoutException("La solicitud tardó demasiado y el servidor no respondió.");
+                        }
+                        
+                        var response = await runTask;
                         flpChat.Controls.Remove(loadingBubble);
                         
                         // Mostrar respuesta en el chat
@@ -96,7 +104,7 @@ namespace Proyecto2_
                         currentRetry++;
                         if (ex.Message.Contains("high demand") && currentRetry < maxRetries)
                         {
-                            lblSubtitle.Text = $"Alta demanda. Reintentando ({currentRetry}/{maxRetries})...";
+                            loadingBubble.Controls.OfType<Label>().First().Text = $"Kodu está escribiendo... (Alta demanda, reintentando {currentRetry}/{maxRetries})";
                             await System.Threading.Tasks.Task.Delay(2000 * currentRetry);
                         }
                         else
