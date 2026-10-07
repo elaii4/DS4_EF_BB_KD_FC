@@ -1,0 +1,68 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|c:\\users\\victus15fb\\downloads\\fokin brayan marido de keisi\\crud_proyecto3\\crudwindowsforms\\crudwindowsforms\\crudwindowsforms\\peopledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|solutionrelative:crudwindowsforms\\peopledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\crudwindowsforms\\frmnuevo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|solutionrelative:crudwindowsforms\\frmnuevo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\crudwindowsforms\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{A3C5E1B2-7D4F-4E8A-9B06-1F2D3C4B5A69}|CrudWindowsForms\\CrudWindowsForms.csproj|solutionrelative:crudwindowsforms\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "PeopleDB.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\PeopleDB.cs",
+              "RelativeDocumentMoniker": "CrudWindowsForms\\PeopleDB.cs",
+              "ToolTip": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\PeopleDB.cs",
+              "RelativeToolTip": "CrudWindowsForms\\PeopleDB.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-06T20:41:50.195Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Form1.cs [Dise\u00F1o]",
+              "DocumentMoniker": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\Form1.cs",
+              "RelativeDocumentMoniker": "CrudWindowsForms\\Form1.cs",
+              "ToolTip": "C:\\Users\\braya\\Downloads\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\Form1.cs [Dise\u00F1o]",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\..\\braya\\Downloads\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\Form1.cs [Dise\u00F1o]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-06T20:41:15.085Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FrmNuevo.cs [Dise\u00F1o]",
+              "DocumentMoniker": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\FrmNuevo.cs",
+              "RelativeDocumentMoniker": "CrudWindowsForms\\FrmNuevo.cs",
+              "ToolTip": "C:\\Users\\VICTUS15FB\\Downloads\\fokin brayan marido de keisi\\Crud_proyecto3\\CrudWindowsForms\\CrudWindowsForms\\CrudWindowsForms\\FrmNuevo.cs [Dise\u00F1o]",
+              "RelativeToolTip": "CrudWindowsForms\\FrmNuevo.cs [Dise\u00F1o]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-06T20:41:08.32Z",
+              "EditorCaption": " [Dise\u00F1o]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

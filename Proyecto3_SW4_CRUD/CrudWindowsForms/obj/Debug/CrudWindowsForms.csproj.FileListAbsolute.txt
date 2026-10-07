@@ -1,0 +1,22 @@
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.AssemblyReference.cache
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.exe.config
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.exe
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.pdb
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.Form1.resources
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.FrmNuevo.resources
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.Properties.Resources.resources
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.GenerateResource.cache
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.CoreCompileInputs.cache
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.exe
+C:\Users\braya\Downloads\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.pdb
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.AssemblyReference.cache
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.exe
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.pdb
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.exe.config
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.exe
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\bin\Debug\CrudWindowsForms.pdb
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.Form1.resources
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.FrmNuevo.resources
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.Properties.Resources.resources
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.GenerateResource.cache
+C:\Users\VICTUS15FB\Downloads\fokin brayan marido de keisi\Crud_proyecto3\CrudWindowsForms\CrudWindowsForms\CrudWindowsForms\obj\Debug\CrudWindowsForms.csproj.CoreCompileInputs.cache
