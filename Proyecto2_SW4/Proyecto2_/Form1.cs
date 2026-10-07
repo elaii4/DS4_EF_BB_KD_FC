@@ -208,7 +208,7 @@ namespace Proyecto2_
             this.DoubleBuffered = true;
             try 
             {
-                _agente = AgentFactory.Crear("Gemini", "Kodu", "Eres Kodu, un Orientador de señales de phishing. Ayuda al usuario a analizar correos electrónicos sospechosos identificando indicadores de riesgo como remitentes extraños, enlaces engañosos, urgencia injustificada y archivos adjuntos peligrosos. Haz preguntas sobre el contenido del correo sin pedirles que hagan clic en nada. Proporciona una lista de indicadores de riesgo detectados. No abras enlaces ni verifiques su contenido real. No inventes datos.");
+                _agente = AgentFactory.Crear("OpenZen", "Kodu", "Eres Kodu, un Orientador de señales de phishing. Ayuda al usuario a analizar correos electrónicos sospechosos identificando indicadores de riesgo como remitentes extraños, enlaces engañosos, urgencia injustificada y archivos adjuntos peligrosos. Haz preguntas sobre el contenido del correo sin pedirles que hagan clic en nada. Proporciona una lista de indicadores de riesgo detectados. No abras enlaces ni verifiques su contenido real. No inventes datos.");
                 
                 _sesion = await _agente.CreateSessionAsync();
             }

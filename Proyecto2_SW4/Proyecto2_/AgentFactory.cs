@@ -1,7 +1,9 @@
-using System;
+using System.ClientModel;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Google.GenAI;
+using OpenAI;
+using OpenAI.Chat;
 
 namespace Proyecto2_
 {
@@ -15,8 +17,27 @@ namespace Proyecto2_
             return proveedor switch
             {
                 "Gemini" => CrearGemini(nombre, instrucciones),
+                "OpenZen" => CrearOpenZen(nombre, instrucciones),
                 _ => throw new ArgumentException("Proveedor no válido o no implementado.")
             };
+        }
+
+        private static AIAgent CrearOpenZen(string nombre, string instrucciones)
+        {
+            string key = Required("OPENZEN_API_KEY");
+            
+            // Configurar el cliente usando el SDK de OpenAI pero apuntando a la API de OpenZen.
+            // Asegúrate de que la URL base de OpenZen sea correcta (puede ser diferente según su documentación).
+            var options = new OpenAI.OpenAIClientOptions { Endpoint = new Uri("https://opencode.ai/zen/v1/") };
+            var openAiClient = new OpenAI.OpenAIClient(new ApiKeyCredential(key), options);
+            
+            // OpenAI v2 requiere obtener el ChatClient especificando el modelo, luego adaptarlo
+            var chatClient = openAiClient.GetChatClient("space-bunny-free");
+            
+            return new ChatClientAgent(
+                chatClient.AsIChatClient(),
+                name: nombre,
+                instructions: instrucciones);
         }
 
         // Adapta el SDK nativo de Google Gemini a la abstracción estándar IChatClient de Microsoft y le inyecta el System Prompt.
