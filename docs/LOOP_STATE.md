@@ -13,7 +13,7 @@
 | ID | Tarea | Fase | Estado | Dependencias | Intentos | Evidencia |
 |---|---|---|---|---|---|---|
 | T-01 | Auditoría inicial y archivos de control | Fase 0 | HECHA | Ninguna | 1 | Archivos creados, git inicializado en branch `feature/arquitectura-capas`. |
-| T-02 | Reorganización de carpetas (`src/Client.WinForms`, `src/Api`, `database/postgres`) | Fase 0 | PENDIENTE | T-01 | 0 | - |
+| T-02 | Reorganización de carpetas (`src/Client.WinForms`, `src/Api`, `database/postgres`) | Fase 0 | HECHA | T-01 | 1 | Movido a `src/Client.WinForms`, slnx actualizado, compilación MSBuild exitosa. |
 | T-03 | Base de datos PostgreSQL: script `database/postgres/01_schema.sql` | Fase 2.1 / 3 | PENDIENTE | T-02 | 0 | - |
 | T-04 | Proyecto API REST (.NET 8) y EF Core con Npgsql, AppDbContext y Migraciones | Fase 2.2 / 3 | PENDIENTE | T-03 | 0 | - |
 | T-05 | Implementación de Endpoints REST, LINQ, ILike, DTOs y validaciones | Fase 2.3 / 3 | PENDIENTE | T-04 | 0 | - |
