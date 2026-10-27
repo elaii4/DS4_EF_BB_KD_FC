@@ -16,7 +16,7 @@ SyslogIdentifier=crudapi
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
 Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
-Environment=ConnectionStrings__Default=Host=localhost;Port=5432;Database=crud_windows_forms;Username=crud_app;Password=crud_secret_dev_pass
+EnvironmentFile=-/etc/default/crudapi
 
 [Install]
 WantedBy=multi-user.target

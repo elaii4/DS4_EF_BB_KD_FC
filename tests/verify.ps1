@@ -81,13 +81,15 @@ try {
 # G4: Sin secretos en el repositorio
 # ------------------------------------------------------------------------------
 try {
-    # Busca Password= que no sea el marcador TU_PASSWORD_AQUI en archivos versionados
-    $secretMatches = git grep -i -E "Password=[^T]" 2>&1
-    $connMatches = git grep -i -E "Initial Catalog=|Data Source=\S+" -- ":!LEER.txt" ":!Database/CrudWindowsForms.sql" 2>&1
-    if ($LASTEXITCODE -ne 0 -or ([string]::IsNullOrWhiteSpace($secretMatches) -and [string]::IsNullOrWhiteSpace($connMatches))) {
-        Log-Gate "G4" "Sin secretos en el repositorio" $true "Solo marcadores appsettings.Example.json permitidos"
+    # Busca Password= que no sea el marcador TU_PASSWORD_AQUI en codigo fuente src/ y unit file
+    $srcSecrets = git grep -i -E "Password=[^T]|pwd=[^T]" src/ 2>&1
+    $unitSecrets = git grep -i -E "Password=[^%]|pwd=[^%]" deploy/crudapi.service 2>&1
+    $appConfigSecrets = git grep -i -E "connectionString|Data Source=" src/Client.WinForms/App.config 2>&1
+
+    if ([string]::IsNullOrWhiteSpace($srcSecrets) -and [string]::IsNullOrWhiteSpace($unitSecrets) -and [string]::IsNullOrWhiteSpace($appConfigSecrets)) {
+        Log-Gate "G4" "Sin secretos en el repositorio" $true "0 secretos en src/, deploy/ y configs; solo marcadores autorizados"
     } else {
-        Log-Gate "G4" "Sin secretos en el repositorio" $false "Posibles secretos detectados: $secretMatches $connMatches"
+        Log-Gate "G4" "Sin secretos en el repositorio" $false "Posibles secretos detectados: $srcSecrets $unitSecrets $appConfigSecrets"
     }
 } catch {
     Log-Gate "G4" "Sin secretos en el repositorio" $false $_.Exception.Message

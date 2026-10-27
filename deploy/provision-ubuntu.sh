@@ -59,36 +59,17 @@ echo "=== 5. Preparando directorio y permisos para la API ==="
 mkdir -p "$API_DIR"
 chown -R www-data:www-data "$API_DIR"
 
-echo "=== 6. Configurando servicio systemd crudapi ==="
+echo "=== 6. Configurando variables de entorno y servicio systemd ==="
+cat << EOF > /etc/default/crudapi
+ConnectionStrings__Default=Host=localhost;Port=5432;Database=$DB_NAME;Username=$DB_USER;Password=$DB_PASS
+EOF
+chmod 600 /etc/default/crudapi
+chown www-data:www-data /etc/default/crudapi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_SRC="${SCRIPT_DIR}/crudapi.service"
 if [ -f "$SERVICE_SRC" ]; then
     cp "$SERVICE_SRC" /etc/systemd/system/crudapi.service
-else
-    cat << EOF > /etc/systemd/system/crudapi.service
-[Unit]
-Description=CrudWindowsForms ASP.NET Core Web API
-After=network.target postgresql.service
-Wants=postgresql.service
-
-[Service]
-Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/crudapi
-ExecStart=/usr/bin/dotnet /opt/crudapi/Api.dll
-Restart=always
-RestartSec=10
-KillSignal=SIGINT
-SyslogIdentifier=crudapi
-Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
-Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
-Environment=ConnectionStrings__Default=Host=localhost;Port=5432;Database=crud_windows_forms;Username=crud_app;Password=$DB_PASS
-
-[Install]
-WantedBy=multi-user.target
-EOF
 fi
 
 systemctl daemon-reload
