@@ -1,0 +1,14 @@
+Cómo ajustar la instancia de SQL Server
+
+La cadena de conexión está en el archivo PeopleLinqDB.cs, en el campo connectionString:
+
+Data Source=.\SQLEXPRESS;Initial Catalog=CrudWindowsForms;Integrated Security=True;
+Abra SSMS y compruebe el nombre del servidor con el que se conecta (aparece en la ventana de conexión, en “Nombre del servidor”).
+
+En PeopleLinqDB.cs, reemplace únicamente el valor de Data Source por ese nombre. Ejemplos: .\SQLEXPRESS, localhost\SQLEXPRESS, (localdb)\MSSQLLocalDB o NOMBRE-PC\SQLEXPRESS.
+
+Deje Initial Catalog=CrudWindowsForms y Integrated Security=True sin cambios, salvo que su base tenga otro nombre o use usuario y contraseña de SQL Server.
+
+Guarde, compile (Ctrl+Shift+B) y ejecute.
+
+Si la conexión falla, compruebe que el servicio de SQL Server esté iniciado, que la base CrudWindowsForms exista (script SQL incluido) y que la conexión funcione primero desde SSMS.

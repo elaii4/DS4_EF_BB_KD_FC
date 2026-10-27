@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Images/">
+    <File Path="../../../../Downloads/actualizaricono.png" />
+    <File Path="../../../../Downloads/agregaricono.png" />
+    <File Path="../../../../Downloads/editaricono.png" />
+    <File Path="../../../../Downloads/eliminaricono.png" />
+    <File Path="../../../../Downloads/personaicono.png" />
+  </Folder>
+  <Project Path="CrudWindowsFormsLinq/CrudWindowsFormsLinq.csproj" Id="7b57887c-a33a-487d-914d-44b86bf053ce" />
+</Solution>
