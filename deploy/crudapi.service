@@ -1,0 +1,22 @@
+[Unit]
+Description=CrudWindowsForms ASP.NET Core Web API
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/crudapi
+ExecStart=/usr/bin/dotnet /opt/crudapi/Api.dll
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=crudapi
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+Environment=ConnectionStrings__Default=Host=localhost;Port=5432;Database=crud_windows_forms;Username=crud_app;Password=crud_secret_dev_pass
+
+[Install]
+WantedBy=multi-user.target

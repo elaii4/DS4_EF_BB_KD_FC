@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,7 +17,19 @@ namespace CrudWindowsFormsLinq
             InitializeComponent();
         }
 
-        private readonly PeopleLinqDB db = new PeopleLinqDB();
+        private readonly PeopleApiClient db = new PeopleApiClient();
+
+        private async Task RefreshPeopleAsync()
+        {
+            try
+            {
+                dgvPeople.DataSource = await db.GetAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al consultar: " + ex.Message);
+            }
+        }
 
         private void RefreshPeople()
         {
@@ -31,15 +43,15 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private async void Form1_Load(object sender, EventArgs e)
         {
-            RefreshPeople();
+            await RefreshPeopleAsync();
         }
 
-        private void btnActualizar_Click(object sender, EventArgs e)
+        private async void btnActualizar_Click(object sender, EventArgs e)
         {
             txtBuscar.Clear();
-            RefreshPeople();
+            await RefreshPeopleAsync();
         }
 
         private int? GetSelectedId()
@@ -51,16 +63,16 @@ namespace CrudWindowsFormsLinq
             return person == null ? (int?)null : person.Id;
         }
 
-        private void btnNuevo_Click(object sender, EventArgs e)
+        private async void btnNuevo_Click(object sender, EventArgs e)
         {
             using (FrmPersona form = new FrmPersona())
             {
                 if (form.ShowDialog(this) == DialogResult.OK)
-                    RefreshPeople();
+                    await RefreshPeopleAsync();
             }
         }
 
-        private void btnEditar_Click(object sender, EventArgs e)
+        private async void btnEditar_Click(object sender, EventArgs e)
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -71,11 +83,11 @@ namespace CrudWindowsFormsLinq
             using (FrmPersona form = new FrmPersona(id.Value))
             {
                 if (form.ShowDialog(this) == DialogResult.OK)
-                    RefreshPeople();
+                    await RefreshPeopleAsync();
             }
         }
 
-        private void btnEliminar_Click(object sender, EventArgs e)
+        private async void btnEliminar_Click(object sender, EventArgs e)
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -95,9 +107,9 @@ namespace CrudWindowsFormsLinq
 
             try
             {
-                if (!db.Delete(id.Value))
+                if (!await db.DeleteAsync(id.Value))
                     MessageBox.Show("El registro ya no existe.");
-                RefreshPeople();
+                await RefreshPeopleAsync();
             }
             catch (Exception ex)
             {
@@ -105,20 +117,21 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private void btnBuscar_Click(object sender, EventArgs e)
+        private async void btnBuscar_Click(object sender, EventArgs e)
         {
             try
             {
                 string text = txtBuscar.Text.Trim();
                 dgvPeople.DataSource = string.IsNullOrWhiteSpace(text)
-                    ? db.Get()
-                    : db.Search(text);
+                    ? await db.GetAsync()
+                    : await db.SearchAsync(text);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al buscar: " + ex.Message);
             }
         }
+
         private void dgvPeople_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
         }
@@ -129,7 +142,6 @@ namespace CrudWindowsFormsLinq
 
         private void tbNombreLINQ_TextChanged(object sender, EventArgs e)
         {
-
         }
     }
 }

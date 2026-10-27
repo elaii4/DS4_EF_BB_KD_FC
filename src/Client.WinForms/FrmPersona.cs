@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,7 +12,7 @@ namespace CrudWindowsFormsLinq
 {
     public partial class FrmPersona : Form
     {
-        private readonly PeopleLinqDB db = new PeopleLinqDB();
+        private readonly PeopleApiClient db = new PeopleApiClient();
         private readonly int? id;
 
         public FrmPersona(int? id = null)
@@ -22,14 +22,14 @@ namespace CrudWindowsFormsLinq
             Text = id.HasValue ? "Editar persona" : "Nueva persona";
         }
 
-        private void FrmPersona_Load(object sender, EventArgs e)
+        private async void FrmPersona_Load(object sender, EventArgs e)
         {
             if (!id.HasValue)
                 return;
 
             try
             {
-                Person person = db.GetById(id.Value);
+                Person person = await db.GetByIdAsync(id.Value);
                 if (person == null)
                 {
                     MessageBox.Show("El registro ya no existe.");
@@ -67,7 +67,7 @@ namespace CrudWindowsFormsLinq
             return true;
         }
 
-        private void btnGuardar_Click(object sender, EventArgs e)
+        private async void btnGuardar_Click(object sender, EventArgs e)
         {
             string name;
             int age;
@@ -78,7 +78,8 @@ namespace CrudWindowsFormsLinq
             {
                 if (id.HasValue)
                 {
-                    if (!db.Update(id.Value, name, age))
+                    bool ok = await db.UpdateAsync(id.Value, name, age);
+                    if (!ok)
                     {
                         MessageBox.Show("El registro ya no existe. Actualice la lista.");
                         return;
@@ -86,7 +87,7 @@ namespace CrudWindowsFormsLinq
                 }
                 else
                 {
-                    int newId = db.Add(name, age);
+                    int newId = await db.AddAsync(name, age);
                     MessageBox.Show("Registro creado con Id " + newId);
                 }
                 DialogResult = DialogResult.OK;
@@ -104,7 +105,6 @@ namespace CrudWindowsFormsLinq
             Close();
         }
 
-       
         private void txtName_TextChanged(object sender, EventArgs e)
         {
         }
