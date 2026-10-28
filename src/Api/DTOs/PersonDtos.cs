@@ -1,5 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
+// PersonDtos.cs
+// Define los objetos de transferencia de datos para la API REST.
+// Aplica anotaciones de validación para entradas y salidas del cliente.
 namespace Api.DTOs;
 
 public class PersonResponseDto

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
+// PeopleController
+// Controlador HTTP REST que expone operaciones CRUD para la entidad Person.
+// Gestiona validaciones, respuestas JSON y consultas LINQ asíncronas hacia EF.
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
@@ -25,7 +28,7 @@ public class PeopleController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<PersonResponseDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<PersonResponseDto>>> GetAll([FromQuery] string? search)
+    public async Task<ActionResult<IEnumerable<PersonResponseDto>>> GetAll([FromQuery] string? search) // Consulta y filtra personas con ILike insensible a mayúsculas
     {
         IQueryable<Person> query = _context.People.AsNoTracking();
 
@@ -60,7 +63,7 @@ public class PeopleController : ControllerBase
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PersonResponseDto>> GetById(int id)
+    public async Task<ActionResult<PersonResponseDto>> GetById(int id) // Busca una persona por su identificador único
     {
         var person = await _context.People
             .AsNoTracking()
@@ -92,7 +95,7 @@ public class PeopleController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PersonResponseDto>> Create([FromBody] PersonCreateDto dto)
+    public async Task<ActionResult<PersonResponseDto>> Create([FromBody] PersonCreateDto dto) // Valida y registra una nueva persona en base
     {
         if (!ModelState.IsValid)
         {
@@ -125,7 +128,7 @@ public class PeopleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(int id, [FromBody] PersonUpdateDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] PersonUpdateDto dto) // Modifica los datos de una persona existente
     {
         if (!ModelState.IsValid)
         {
@@ -157,7 +160,7 @@ public class PeopleController : ControllerBase
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id) // Remueve una persona por su identificador único
     {
         var person = await _context.People.FindAsync(id);
         if (person == null)

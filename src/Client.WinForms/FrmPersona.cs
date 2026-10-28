@@ -10,6 +10,9 @@ using System.Windows.Forms;
 
 namespace CrudWindowsFormsLinq
 {
+    // FrmPersona
+    // Ventana modal para captura y edición de datos de una persona.
+    // Valida entradas del usuario y envía peticiones de guardado a PeopleApiClient.
     public partial class FrmPersona : Form
     {
         private readonly PeopleApiClient db = new PeopleApiClient();
@@ -22,7 +25,7 @@ namespace CrudWindowsFormsLinq
             Text = id.HasValue ? "Editar persona" : "Nueva persona";
         }
 
-        private async void FrmPersona_Load(object sender, EventArgs e)
+        private async void FrmPersona_Load(object sender, EventArgs e) // Carga datos existentes al editar una persona
         {
             if (!id.HasValue)
                 return;
@@ -48,7 +51,7 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private bool ValidateInput(out string name, out int age)
+        private bool ValidateInput(out string name, out int age) // Valida formato de texto y rango numérico
         {
             name = txtName.Text.Trim();
             age = 0;
@@ -67,7 +70,7 @@ namespace CrudWindowsFormsLinq
             return true;
         }
 
-        private async void btnGuardar_Click(object sender, EventArgs e)
+        private async void btnGuardar_Click(object sender, EventArgs e) // Ejecuta creación o actualización según corresponda
         {
             string name;
             int age;

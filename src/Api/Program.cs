@@ -1,14 +1,17 @@
+// Program.cs
+// Punto de entrada y configuración de la API REST ASP.NET Core 8.
+// Registra servicios, DbContext en PostgreSQL, Swagger y canal de middleware.
 using Api.Data;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args); // Inicializa el constructor de la aplicación web
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? builder.Configuration["ConnectionStrings__Default"]
     ?? throw new InvalidOperationException("Cadena de conexión 'Default' no configurada.");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>(options => // Configura el contexto de datos con Npgsql
 {
     options.UseNpgsql(connectionString);
 });

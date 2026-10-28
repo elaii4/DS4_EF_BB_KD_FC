@@ -10,12 +10,15 @@ using Newtonsoft.Json;
 
 namespace CrudWindowsFormsLinq
 {
+    // PeopleApiClient
+    // Cliente HTTP que centraliza la comunicación con la API REST remota.
+    // Serializa solicitudes JSON y gestiona respuestas para todas las operaciones CRUD.
     public class PeopleApiClient
     {
         private static readonly HttpClient httpClient;
         private static readonly string baseApiUrl;
 
-        static PeopleApiClient()
+        static PeopleApiClient() // Inicializa HttpClient único y lee ApiBaseUrl desde App.config
         {
             baseApiUrl = ConfigurationManager.AppSettings["ApiBaseUrl"];
             if (string.IsNullOrWhiteSpace(baseApiUrl))
@@ -37,7 +40,7 @@ namespace CrudWindowsFormsLinq
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task<List<Person>> GetAsync()
+        public async Task<List<Person>> GetAsync() // Solicita el listado completo de personas vía HTTP
         {
             try
             {
@@ -61,7 +64,7 @@ namespace CrudWindowsFormsLinq
             return Task.Run(() => GetAsync()).GetAwaiter().GetResult();
         }
 
-        public async Task<Person> GetByIdAsync(int id)
+        public async Task<Person> GetByIdAsync(int id) // Obtiene una persona específica por su identificador único
         {
             try
             {
@@ -89,7 +92,7 @@ namespace CrudWindowsFormsLinq
             return Task.Run(() => GetByIdAsync(id)).GetAwaiter().GetResult();
         }
 
-        public async Task<int> AddAsync(string name, int age)
+        public async Task<int> AddAsync(string name, int age) // Envía datos para registrar una persona nueva
         {
             try
             {
@@ -123,7 +126,7 @@ namespace CrudWindowsFormsLinq
             return Task.Run(() => AddAsync(name, age)).GetAwaiter().GetResult();
         }
 
-        public async Task<bool> UpdateAsync(int id, string name, int age)
+        public async Task<bool> UpdateAsync(int id, string name, int age) // Envía cambios para actualizar un registro existente
         {
             try
             {
@@ -160,7 +163,7 @@ namespace CrudWindowsFormsLinq
             return Task.Run(() => UpdateAsync(id, name, age)).GetAwaiter().GetResult();
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id) // Solicita eliminar un registro por su identificador
         {
             try
             {
@@ -188,7 +191,7 @@ namespace CrudWindowsFormsLinq
             return Task.Run(() => DeleteAsync(id)).GetAwaiter().GetResult();
         }
 
-        public async Task<List<Person>> SearchAsync(string text)
+        public async Task<List<Person>> SearchAsync(string text) // Consulta personas cuyo nombre coincida con el criterio
         {
             try
             {

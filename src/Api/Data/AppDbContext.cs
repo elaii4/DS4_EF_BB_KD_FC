@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Data;
 
+// AppDbContext
+// Gestiona la conexión y entidades para Entity Framework Core en PostgreSQL.
+// Mapea la tabla people y aplica restricciones de integridad relacional.
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -11,7 +14,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Person> People => Set<Person>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder) // Configura mapeo relacional, restricciones y datos semilla
     {
         base.OnModelCreating(modelBuilder);
 

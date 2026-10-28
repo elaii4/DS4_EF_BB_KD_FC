@@ -10,6 +10,9 @@ using System.Windows.Forms;
 
 namespace CrudWindowsFormsLinq
 {
+    // Form1
+    // Formulario principal que muestra la grilla interactiva y botones de acción.
+    // Coordina la visualización, búsqueda, inserción, edición y eliminación de personas.
     public partial class Form1 : Form
     {
         public Form1()
@@ -19,7 +22,7 @@ namespace CrudWindowsFormsLinq
 
         private readonly PeopleApiClient db = new PeopleApiClient();
 
-        private async Task RefreshPeopleAsync()
+        private async Task RefreshPeopleAsync() // Recarga la lista desde la API asíncronamente
         {
             try
             {
@@ -54,7 +57,7 @@ namespace CrudWindowsFormsLinq
             await RefreshPeopleAsync();
         }
 
-        private int? GetSelectedId()
+        private int? GetSelectedId() // Obtiene el identificador de la fila seleccionada
         {
             if (dgvPeople.CurrentRow == null)
                 return null;
@@ -63,7 +66,7 @@ namespace CrudWindowsFormsLinq
             return person == null ? (int?)null : person.Id;
         }
 
-        private async void btnNuevo_Click(object sender, EventArgs e)
+        private async void btnNuevo_Click(object sender, EventArgs e) // Abre ventana modal para crear nueva persona
         {
             using (FrmPersona form = new FrmPersona())
             {
@@ -72,7 +75,7 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnEditar_Click(object sender, EventArgs e)
+        private async void btnEditar_Click(object sender, EventArgs e) // Abre ventana modal para editar persona seleccionada
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -87,7 +90,7 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnEliminar_Click(object sender, EventArgs e)
+        private async void btnEliminar_Click(object sender, EventArgs e) // Solicita confirmación y elimina la persona seleccionada
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -117,7 +120,7 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnBuscar_Click(object sender, EventArgs e)
+        private async void btnBuscar_Click(object sender, EventArgs e) // Filtra registros por texto ingresado en búsqueda
         {
             try
             {
