@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# tests/api-smoke - Smoke test suite for REST API (curl / bash)
+# ==============================================================================
+set -u
+
+BASE_URL="${1:-http://localhost:5000}"
+PASSED=0
+FAILED=0
+
+assert_eq() {
+    local name="$1"
+    local expected="$2"
+    local actual="$3"
+    if [ "$expected" = "$actual" ]; then
+        echo -e "\033[0;32m [PASS] $name\033[0m"
+        PASSED=$((PASSED + 1))
+    else
+        echo -e "\033[0;31m [FAIL] $name (esperado: $expected, obtenido: $actual)\033[0m"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
+echo "=== Running API Smoke Tests on $BASE_URL ==="
+
+# 1. GET /api/people
+status=$(curl -s -o /tmp/people.json -w "%{http_code}" "$BASE_URL/api/people")
+assert_eq "1. GET /api/people status 200" "200" "$status"
+
+# 2. GET /api/people?search=an (case-insensitive)
+search_an=$(curl -s "$BASE_URL/api/people?search=an")
+has_ana=$(echo "$search_an" | grep -q "Ana" && echo "yes" || echo "no")
+assert_eq "2. Search 'an' contains Ana" "yes" "$has_ana"
+
+# 2b. GET /api/people?search=a (matches Ana and Maria)
+search_a=$(curl -s "$BASE_URL/api/people?search=a")
+has_ana_in_a=$(echo "$search_a" | grep -q "Ana" && echo "yes" || echo "no")
+has_maria_in_a=$(echo "$search_a" | grep -q "Maria" && echo "yes" || echo "no")
+assert_eq "2b. Search 'a' contains Ana and Maria" "yes" "$has_maria_in_a"
+
+# 3. GET /api/people/1
+get1_status=$(curl -s -o /tmp/p1.json -w "%{http_code}" "$BASE_URL/api/people/1")
+assert_eq "3. GET /api/people/1 status 200" "200" "$get1_status"
+
+# 4. GET /api/people/999999 (404)
+get_404_status=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/people/999999")
+assert_eq "4. GET /api/people/999999 status 404" "404" "$get_404_status"
+
+# 5. POST /api/people valid
+post_status=$(curl -s -o /tmp/created.json -w "%{http_code}" -X POST "$BASE_URL/api/people" \
+    -H "Content-Type: application/json" -d '{"name":"Carlos Test","age":28}')
+assert_eq "5. POST /api/people valid status 201" "201" "$post_status"
+new_id=$(grep -o '"id":[0-9]*' /tmp/created.json | head -1 | cut -d: -f2)
+
+# 6. POST /api/people invalid (empty name)
+post_bad_name=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/people" \
+    -H "Content-Type: application/json" -d '{"name":"","age":28}')
+assert_eq "6. POST empty name status 400" "400" "$post_bad_name"
+
+# 7. POST /api/people invalid (age 121)
+post_bad_age=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/people" \
+    -H "Content-Type: application/json" -d '{"name":"Invalid","age":121}')
+assert_eq "7. POST age 121 status 400" "400" "$post_bad_age"
+
+# 8. POST /api/people invalid (age -1)
+post_neg_age=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/people" \
+    -H "Content-Type: application/json" -d '{"name":"Invalid","age":-1}')
+assert_eq "8. POST age -1 status 400" "400" "$post_neg_age"
+
+# 9. PUT /api/people/{id}
+if [ -n "$new_id" ]; then
+    put_status=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$BASE_URL/api/people/$new_id" \
+        -H "Content-Type: application/json" -d '{"name":"Carlos Updated","age":29}')
+    assert_eq "9. PUT /api/people/$new_id status 204" "204" "$put_status"
+fi
+
+# 10. PUT /api/people/999999
+put_404_status=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$BASE_URL/api/people/999999" \
+    -H "Content-Type: application/json" -d '{"name":"None","age":20}')
+assert_eq "10. PUT /api/people/999999 status 404" "404" "$put_404_status"
+
+# 11. DELETE /api/people/{id}
+if [ -n "$new_id" ]; then
+    del_status=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/people/$new_id")
+    assert_eq "11. DELETE /api/people/$new_id status 204" "204" "$del_status"
+fi
+
+# 12. DELETE /api/people/999999
+del_404_status=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/people/999999")
+assert_eq "12. DELETE /api/people/999999 status 404" "404" "$del_404_status"
+
+echo "=== Total: $PASSED Passed, $FAILED Failed ==="
+if [ "$FAILED" -gt 0 ]; then
+    exit 1
+fi
+exit 0

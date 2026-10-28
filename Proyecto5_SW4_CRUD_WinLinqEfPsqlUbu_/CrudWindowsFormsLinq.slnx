@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Api/Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Client.WinForms/">
+    <Project Path="src/Client.WinForms/CrudWindowsFormsLinq.csproj" Id="7b57887c-a33a-487d-914d-44b86bf053ce" />
+  </Folder>
+</Solution>

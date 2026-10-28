@@ -1,0 +1,14 @@
+## Visual Studio / .NET .gitignore
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+appsettings.Development.json
+appsettings.json
+!appsettings.Example.json
+*.log
+publish/
+packages/
