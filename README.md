@@ -1,5 +1,8 @@
 # Migración de CrudWindowsFormsLinq a Arquitectura en Capas
 
+> 📖 **¿Buscas cómo ejecutar el proyecto paso a paso?**  
+> Consulta la [**Guía Paso a Paso para Ejecutar el Proyecto (GUIA_PASO_A_PASO.md)**](file:///c:/Users/VICTUS15FB/Downloads/CrudWindowsFormsLinq/CrudWindowsFormsLinq/GUIA_PASO_A_PASO.md) para un tutorial detallado y amigable desde cero.
+
 Este repositorio contiene la transformación y migración completa de la solución original **CrudWindowsFormsLinq** (CRUD monolítico acoplado a SQL Server mediante LINQ to SQL) hacia una moderna **arquitectura desacoplada en cuatro capas**.
 
 ---
