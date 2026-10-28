@@ -11,3 +11,4 @@ appsettings.json
 !appsettings.Example.json
 *.log
 publish/
+packages/
