@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # SERVICIO 1: Base de Datos Relacional (PostgreSQL 16)
+  # -------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: crud_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crud_windows_forms
+      POSTGRES_USER: crud_app
+      POSTGRES_PASSWORD: crud_secret_dev_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      # 1. Persistencia de datos (no se pierden al reiniciar)
+      - postgres_data:/var/lib/postgresql/data
+      # 2. Inicialización automática de la tabla y datos iniciales
+      - ./Database/postgres/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crud_app -d crud_windows_forms"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # SERVICIO 2: Backend API REST (.NET 8)
+  # -------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: src/Api/Dockerfile
+    container_name: crud_api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Nota clave: 'Host=db' apunta al contenedor de la base de datos
+      - ConnectionStrings__Default=Host=db;Port=5432;Database=crud_windows_forms;Username=crud_app;Password=crud_secret_dev_pass
+    depends_on:
+      db:
+        condition: service_healthy
+
+# Volumen para que la base de datos conserve la información
+volumes:
+  postgres_data:
