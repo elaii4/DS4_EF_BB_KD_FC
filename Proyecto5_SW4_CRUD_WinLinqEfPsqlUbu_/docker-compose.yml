@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # -------------------------------------------------------------
   # SERVICIO 1: Base de Datos Relacional (PostgreSQL 16)
@@ -13,7 +11,7 @@ services:
       POSTGRES_USER: crud_app
       POSTGRES_PASSWORD: crud_secret_dev_pass
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       # 1. Persistencia de datos (no se pierden al reiniciar)
       - postgres_data:/var/lib/postgresql/data
