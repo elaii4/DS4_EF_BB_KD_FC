@@ -24,15 +24,16 @@ namespace CrudWindowsFormsLinq
 
         private void UpdateServerButtonVisual()
         {
+            btnActualizar.Image = null;
             if (PeopleApiClient.CurrentServer == ServerTarget.Windows)
             {
-                btnActualizar.Text = "  Servidor: Windows";
+                btnActualizar.Text = "Servidor Win";
                 btnActualizar.BackColor = Color.FromArgb(0, 120, 215); // Azul Windows
                 btnActualizar.ForeColor = Color.White;
             }
             else
             {
-                btnActualizar.Text = "  Servidor: Ubuntu";
+                btnActualizar.Text = "Servidor Lin";
                 btnActualizar.BackColor = Color.FromArgb(233, 84, 32); // Naranja Ubuntu
                 btnActualizar.ForeColor = Color.White;
             }
