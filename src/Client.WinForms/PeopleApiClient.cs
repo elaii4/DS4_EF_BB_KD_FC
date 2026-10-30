@@ -10,34 +10,75 @@ using Newtonsoft.Json;
 
 namespace CrudWindowsFormsLinq
 {
+    public enum ServerTarget
+    {
+        Windows,
+        Ubuntu
+    }
+
     // PeopleApiClient
     // Cliente HTTP que centraliza la comunicación con la API REST remota.
     // Serializa solicitudes JSON y gestiona respuestas para todas las operaciones CRUD.
+    // Permite conmutar dinámicamente entre el Servidor Windows y el Servidor Ubuntu.
     public class PeopleApiClient
     {
-        private static readonly HttpClient httpClient;
-        private static readonly string baseApiUrl;
+        private static HttpClient httpClient;
+        private static string currentBaseUrl;
+        private static ServerTarget currentServer = ServerTarget.Windows;
 
-        static PeopleApiClient() // Inicializa HttpClient único y lee ApiBaseUrl desde App.config
+        public static string WindowsUrl { get; private set; }
+        public static string UbuntuUrl { get; private set; }
+
+        public static ServerTarget CurrentServer
         {
-            baseApiUrl = ConfigurationManager.AppSettings["ApiBaseUrl"];
-            if (string.IsNullOrWhiteSpace(baseApiUrl))
+            get => currentServer;
+            set
             {
-                baseApiUrl = "http://localhost:5000";
+                currentServer = value;
+                ConfigureClient(currentServer == ServerTarget.Windows ? WindowsUrl : UbuntuUrl);
+            }
+        }
+
+        public static string CurrentBaseUrl => currentBaseUrl;
+
+        static PeopleApiClient()
+        {
+            WindowsUrl = ConfigurationManager.AppSettings["ApiUrl_Windows"] ?? "http://localhost:5144";
+            UbuntuUrl = ConfigurationManager.AppSettings["ApiUrl_Ubuntu"] ?? "http://localhost:5000";
+
+            string defaultTarget = ConfigurationManager.AppSettings["DefaultServer"] ?? "Windows";
+            currentServer = defaultTarget.Equals("Ubuntu", StringComparison.OrdinalIgnoreCase) 
+                ? ServerTarget.Ubuntu 
+                : ServerTarget.Windows;
+
+            ConfigureClient(currentServer == ServerTarget.Windows ? WindowsUrl : UbuntuUrl);
+        }
+
+        private static void ConfigureClient(string url)
+        {
+            if (!url.EndsWith("/"))
+            {
+                url += "/";
             }
 
-            if (!baseApiUrl.EndsWith("/"))
-            {
-                baseApiUrl += "/";
-            }
+            currentBaseUrl = url;
 
+            httpClient?.Dispose();
             httpClient = new HttpClient
             {
-                BaseAddress = new Uri(baseApiUrl),
+                BaseAddress = new Uri(currentBaseUrl),
                 Timeout = TimeSpan.FromSeconds(10)
             };
             httpClient.DefaultRequestHeaders.Accept.Clear();
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        public static ServerTarget ToggleServer()
+        {
+            CurrentServer = (currentServer == ServerTarget.Windows) 
+                ? ServerTarget.Ubuntu 
+                : ServerTarget.Windows;
+            return CurrentServer;
         }
 
         public async Task<List<Person>> GetAsync() // Solicita el listado completo de personas vía HTTP
@@ -51,7 +92,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {
@@ -79,7 +120,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {
@@ -113,7 +154,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {
@@ -150,7 +191,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {
@@ -178,7 +219,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {
@@ -203,7 +244,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("No se pudo conectar con el servidor.", ex);
+                throw new Exception($"No se pudo conectar con el servidor ({currentServer}: {currentBaseUrl}).", ex);
             }
             catch (TaskCanceledException ex)
             {

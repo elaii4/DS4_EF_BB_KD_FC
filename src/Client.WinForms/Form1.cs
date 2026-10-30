@@ -12,7 +12,7 @@ namespace CrudWindowsFormsLinq
 {
     // Form1
     // Formulario principal que muestra la grilla interactiva y botones de acción.
-    // Coordina la visualización, búsqueda, inserción, edición y eliminación de personas.
+    // Coordina la visualización, búsqueda, inserción, edición y conmutación entre servidores.
     public partial class Form1 : Form
     {
         public Form1()
@@ -22,6 +22,22 @@ namespace CrudWindowsFormsLinq
 
         private readonly PeopleApiClient db = new PeopleApiClient();
 
+        private void UpdateServerButtonVisual()
+        {
+            if (PeopleApiClient.CurrentServer == ServerTarget.Windows)
+            {
+                btnActualizar.Text = "  Servidor: Windows";
+                btnActualizar.BackColor = Color.FromArgb(0, 120, 215); // Azul Windows
+                btnActualizar.ForeColor = Color.White;
+            }
+            else
+            {
+                btnActualizar.Text = "  Servidor: Ubuntu";
+                btnActualizar.BackColor = Color.FromArgb(233, 84, 32); // Naranja Ubuntu
+                btnActualizar.ForeColor = Color.White;
+            }
+        }
+
         private async Task RefreshPeopleAsync() // Recarga la lista desde la API asíncronamente
         {
             try
@@ -30,7 +46,7 @@ namespace CrudWindowsFormsLinq
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al consultar: " + ex.Message);
+                MessageBox.Show("Error al consultar: " + ex.Message, "Error de Conexión", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -42,18 +58,25 @@ namespace CrudWindowsFormsLinq
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al consultar: " + ex.Message);
+                MessageBox.Show("Error al consultar: " + ex.Message, "Error de Conexión", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
         private async void Form1_Load(object sender, EventArgs e)
         {
+            UpdateServerButtonVisual();
             await RefreshPeopleAsync();
         }
 
+        // btnActualizar ahora funciona como el Botón Conmutador (Switch de Servidor)
         private async void btnActualizar_Click(object sender, EventArgs e)
         {
+            // Conmuta entre Windows y Ubuntu
+            ServerTarget newServer = PeopleApiClient.ToggleServer();
+            UpdateServerButtonVisual();
             txtBuscar.Clear();
+
+            // Refresca automáticamente con la base de datos del nuevo servidor
             await RefreshPeopleAsync();
         }
 
