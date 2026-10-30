@@ -106,13 +106,13 @@
             this.btnActualizar.BackColor = System.Drawing.Color.Green;
             this.btnActualizar.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnActualizar.ForeColor = System.Drawing.Color.White;
-            this.btnActualizar.Image = global::CrudWindowsFormsLinq.Properties.Resources.actualizaricono;
+            // this.btnActualizar.Image = null;
             this.btnActualizar.Location = new System.Drawing.Point(945, 640);
             this.btnActualizar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.btnActualizar.Name = "btnActualizar";
             this.btnActualizar.Size = new System.Drawing.Size(171, 52);
             this.btnActualizar.TabIndex = 8;
-            this.btnActualizar.Text = "Actualizar";
+            this.btnActualizar.Text = "Servidor Win";
             this.btnActualizar.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.btnActualizar.UseVisualStyleBackColor = false;
             this.btnActualizar.Click += new System.EventHandler(this.btnActualizar_Click);
