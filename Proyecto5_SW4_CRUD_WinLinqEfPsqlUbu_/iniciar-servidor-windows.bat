@@ -16,3 +16,4 @@ set ASPNETCORE_URLS=http://0.0.0.0:5144
 
 dotnet run --no-launch-profile
 pause
+
