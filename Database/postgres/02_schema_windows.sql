@@ -35,3 +35,4 @@ END
 $$;
 
 SELECT id, name, age FROM people ORDER BY id;
+
