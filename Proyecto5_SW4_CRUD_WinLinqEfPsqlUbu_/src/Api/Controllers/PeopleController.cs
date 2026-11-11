@@ -23,9 +23,6 @@ public class PeopleController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Obtiene la lista de personas ordenada por id, o filtrada por nombre si se pasa el parametro search.
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<PersonResponseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<PersonResponseDto>>> GetAll([FromQuery] string? search) // Consulta y filtra personas con ILike insensible a mayúsculas
@@ -57,9 +54,6 @@ public class PeopleController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>
-    /// Obtiene una persona por su identificador unico.
-    /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -89,9 +83,6 @@ public class PeopleController : ControllerBase
         return Ok(person);
     }
 
-    /// <summary>
-    /// Crea una nueva persona.
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -121,9 +112,6 @@ public class PeopleController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = person.Id }, response);
     }
 
-    /// <summary>
-    /// Actualiza los datos de una persona existente.
-    /// </summary>
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -154,9 +142,6 @@ public class PeopleController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Elimina una persona por su identificador unico.
-    /// </summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
