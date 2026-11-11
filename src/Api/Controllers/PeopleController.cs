@@ -23,25 +23,31 @@ public class PeopleController : ControllerBase
         _logger = logger;
     }
 
+    // GET: api/people
+    // GET: api/people?search=texto
+    // Consulta el listado completo de personas o filtra por nombre si se recibe el parametro search.
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<PersonResponseDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<PersonResponseDto>>> GetAll([FromQuery] string? search) // Consulta y filtra personas con ILike insensible a mayúsculas
+    public async Task<ActionResult<IEnumerable<PersonResponseDto>>> GetAll([FromQuery] string? search)
     {
+        // AsNoTracking(): optimizacion que desactiva el rastreo de cambios en memoria RAM, haciendo la lectura mucho mas rapida.
         IQueryable<Person> query = _context.People.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var trimmedSearch = search.Trim();
-            // EF.Functions.ILike realiza la busqueda case-insensitive directamente en PostgreSQL (SQL ILIKE)
+            // EF.Functions.ILike traduce la busqueda directamente al operador ILIKE de PostgreSQL (insensible a mayusculas/minusculas)
             query = query
                 .Where(p => EF.Functions.ILike(p.Name, $"%{trimmedSearch}%"))
                 .OrderBy(p => p.Name);
         }
         else
         {
+            // Orden predeterminado por identificador ascendente
             query = query.OrderBy(p => p.Id);
         }
 
+        // Proyeccion a PersonResponseDto: protege la entidad de dominio y solo envia al cliente los campos necesarios
         var list = await query
             .Select(p => new PersonResponseDto
             {
@@ -51,13 +57,15 @@ public class PeopleController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(list);
+        return Ok(list); // Retorna HTTP 200 OK con la lista en formato JSON
     }
 
+    // GET: api/people/{id}
+    // Busca una persona especifica por su clave primaria (ID).
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PersonResponseDto>> GetById(int id) // Busca una persona por su identificador único
+    public async Task<ActionResult<PersonResponseDto>> GetById(int id)
     {
         var person = await _context.People
             .AsNoTracking()
@@ -70,6 +78,7 @@ public class PeopleController : ControllerBase
             })
             .FirstOrDefaultAsync();
 
+        // Si no existe en la base de datos, retorna HTTP 404 con un mensaje explicativo
         if (person == null)
         {
             return NotFound(new ProblemDetails
@@ -80,19 +89,23 @@ public class PeopleController : ControllerBase
             });
         }
 
-        return Ok(person);
+        return Ok(person); // Retorna HTTP 200 OK con el objeto encontrado
     }
 
+    // POST: api/people
+    // Registra una nueva persona en la base de datos activa (recibe los datos en formato JSON en el cuerpo).
     [HttpPost]
     [ProducesResponseType(typeof(PersonResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PersonResponseDto>> Create([FromBody] PersonCreateDto dto) // Valida y registra una nueva persona en base
+    public async Task<ActionResult<PersonResponseDto>> Create([FromBody] PersonCreateDto dto)
     {
+        // Validacion automatica de las anotaciones del DTO (nombre obligatorio, edad positiva)
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
+        // Mapeo del DTO recibido a la entidad de base de datos Person
         var person = new Person
         {
             Name = dto.Name.Trim(),
@@ -100,7 +113,7 @@ public class PeopleController : ControllerBase
         };
 
         _context.People.Add(person);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(); // EF Core ejecuta el SQL: INSERT INTO people ... RETURNING id
 
         var response = new PersonResponseDto
         {
@@ -109,20 +122,24 @@ public class PeopleController : ControllerBase
             Age = person.Age
         };
 
+        // Retorna HTTP 201 Created con la cabecera Location apuntando a GetById para consultar el nuevo registro
         return CreatedAtAction(nameof(GetById), new { id = person.Id }, response);
     }
 
+    // PUT: api/people/{id}
+    // Modifica los datos de una persona existente en la base de datos.
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(int id, [FromBody] PersonUpdateDto dto) // Modifica los datos de una persona existente
+    public async Task<IActionResult> Update(int id, [FromBody] PersonUpdateDto dto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
+        // Busca el registro en la base de datos para confirmar su existencia antes de editar
         var person = await _context.People.FindAsync(id);
         if (person == null)
         {
@@ -134,18 +151,21 @@ public class PeopleController : ControllerBase
             });
         }
 
+        // Actualiza los valores en memoria
         person.Name = dto.Name.Trim();
         person.Age = dto.Age;
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(); // EF Core genera y ejecuta el SQL UPDATE correspondiente
 
-        return NoContent();
+        return NoContent(); // Retorna HTTP 204 NoContent para indicar exito sin necesidad de devolver cuerpo
     }
 
+    // DELETE: api/people/{id}
+    // Remueve una persona por su identificador unico.
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id) // Remueve una persona por su identificador único
+    public async Task<IActionResult> Delete(int id)
     {
         var person = await _context.People.FindAsync(id);
         if (person == null)
@@ -159,8 +179,8 @@ public class PeopleController : ControllerBase
         }
 
         _context.People.Remove(person);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(); // EF Core ejecuta el SQL DELETE correspondiente en PostgreSQL
 
-        return NoContent();
+        return NoContent(); // Retorna HTTP 204 indicando eliminacion correcta
     }
 }

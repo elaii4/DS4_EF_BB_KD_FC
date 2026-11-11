@@ -81,7 +81,8 @@ namespace CrudWindowsFormsLinq
             await RefreshPeopleAsync();
         }
 
-        private int? GetSelectedId() // Obtiene el identificador de la fila seleccionada
+        // Obtiene el ID numerico de la fila seleccionada por el usuario en la tabla
+        private int? GetSelectedId()
         {
             if (dgvPeople.CurrentRow == null)
                 return null;
@@ -90,7 +91,8 @@ namespace CrudWindowsFormsLinq
             return person == null ? (int?)null : person.Id;
         }
 
-        private async void btnNuevo_Click(object sender, EventArgs e) // Abre ventana modal para crear nueva persona
+        // Abre la ventana modal para crear una nueva persona y refresca la tabla al guardar
+        private async void btnNuevo_Click(object sender, EventArgs e)
         {
             using (FrmPersona form = new FrmPersona())
             {
@@ -99,7 +101,8 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnEditar_Click(object sender, EventArgs e) // Abre ventana modal para editar persona seleccionada
+        // Abre la ventana modal en modo edicion pasando el ID seleccionado
+        private async void btnEditar_Click(object sender, EventArgs e)
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -114,7 +117,8 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnEliminar_Click(object sender, EventArgs e) // Solicita confirmación y elimina la persona seleccionada
+        // Solicita confirmacion al usuario y envia la peticion DELETE a la API activa
+        private async void btnEliminar_Click(object sender, EventArgs e)
         {
             int? id = GetSelectedId();
             if (!id.HasValue)
@@ -144,7 +148,8 @@ namespace CrudWindowsFormsLinq
             }
         }
 
-        private async void btnBuscar_Click(object sender, EventArgs e) // Filtra registros por texto ingresado en búsqueda
+        // Envia el texto del buscador a la API para filtrar personas en PostgreSQL (con ILIKE)
+        private async void btnBuscar_Click(object sender, EventArgs e)
         {
             try
             {
