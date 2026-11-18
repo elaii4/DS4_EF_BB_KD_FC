@@ -6,6 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args); // Inicializa el constructor de la aplicación web
 
+// Asegurar puerto 5144 en Windows para evitar conflicto con svchost/servicios de Windows en el puerto 5000
+if (Environment.GetEnvironmentVariable("ASPNETCORE_URLS") == null && builder.Configuration["urls"] == null)
+{
+    builder.WebHost.UseUrls("http://localhost:5144");
+}
+
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? builder.Configuration["ConnectionStrings__Default"]
