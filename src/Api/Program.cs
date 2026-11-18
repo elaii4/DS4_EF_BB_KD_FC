@@ -6,6 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args); // Inicializa el constructor de la aplicación web
 
+// Asegurar puerto 5144 en Windows para evitar conflicto con svchost/servicios de Windows en el puerto 5000
+if (Environment.GetEnvironmentVariable("ASPNETCORE_URLS") == null && builder.Configuration["urls"] == null)
+{
+    builder.WebHost.UseUrls("http://localhost:5144");
+}
+
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? builder.Configuration["ConnectionStrings__Default"]
@@ -17,6 +23,17 @@ builder.Services.AddDbContext<AppDbContext>(options => // Configura el contexto 
 });
 
 builder.Services.AddControllers();
+
+// Configuración de CORS para permitir solicitudes desde Blazor WebAssembly / navegadores
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -57,6 +74,9 @@ app.UseExceptionHandler(errorApp =>
         });
     });
 });
+
+// Habilitar política CORS antes del enrutamiento de controladores
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
