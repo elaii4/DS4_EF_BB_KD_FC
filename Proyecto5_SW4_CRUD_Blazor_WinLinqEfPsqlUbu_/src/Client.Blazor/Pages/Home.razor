@@ -1,0 +1,766 @@
+@page "/"
+@implements IDisposable
+@inject PeopleApiService ApiService
+@inject IJSRuntime JS
+
+<PageTitle>Gestión de Personas</PageTitle>
+
+@if (isInitialLoading)
+{
+    <LoadingBoxes />
+}
+
+<div class="main-dashboard p-4 p-md-5 w-100">
+
+    <!-- BARRA SUPERIOR: Breadcrumb, Conmutador y Refresh -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <!-- Breadcrumb -->
+        <div class="d-flex align-items-center gap-2 text-muted small" style="font-size: 0.88rem;">
+            <span>DS4 Hub</span>
+            <span>›</span>
+            <span class="text-dark fw-semibold">Gestión de Personas</span>
+        </div>
+
+        <!-- Acciones derechas: Conmutador de Servidor y Refresh -->
+        <div class="d-flex align-items-center gap-3 ms-auto">
+            <!-- SERVIDOR SWITCH (AZUL WIN / NARANJA LIN) -->
+            <button type="button"
+                    class="btn btn-server-toggle shadow-sm d-flex align-items-center gap-2"
+                    style="@(ApiService.CurrentServer == ServerTarget.Windows ? "background-color: #0078d7; color: white;" : "background-color: #e95420; color: white;")"
+                    @onclick="HandleToggleServer"
+                    disabled="@isLoading"
+                    title="Clic para cambiar de servidor">
+                <span>@(ApiService.CurrentServer == ServerTarget.Windows ? "Servidor Win" : "Servidor Lin")</span>
+            </button>
+
+            <!-- Botón circular Refresh -->
+            <button class="circle-btn" @onclick="LoadPeopleAsync" disabled="@isLoading" title="Recargar lista">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- TÍTULO PRINCIPAL Y BARRA DE ACCIÓN -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom border-light">
+        <div>
+            <h1 class="display-6 fw-bold tracking-tight text-dark mb-0" style="font-size: 1.85rem;">Directorio de Personas</h1>
+        </div>
+
+        <!-- Barra de búsqueda agrandada -->
+        <div class="flex-grow-1 mx-md-4 search-pill-wrapper" style="max-width: 680px;">
+            <svg width="17" height="17" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24" class="ms-2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text"
+                   class="search-pill-input"
+                   placeholder="Buscar por nombre..."
+                   @bind="searchTerm"
+                   @bind:event="oninput"
+                   @onkeyup="HandleSearchKeyUp" />
+            @if (!string.IsNullOrEmpty(searchTerm))
+            {
+                <button class="btn btn-sm btn-link text-muted p-0 me-2 text-decoration-none" @onclick="ClearSearch">✕</button>
+            }
+        </div>
+
+        <div>
+            <!-- Botón Negro estilo Figma -->
+            <button class="btn-modern-black" @onclick="OpenCreateModal">
+                <span>+ Agregar Persona</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ALERTA / FEEDBACK -->
+    @if (!string.IsNullOrEmpty(alertMessage))
+    {
+        <div class="alert @(isAlertError ? "alert-danger" : "alert-success") alert-dismissible fade show border-0 rounded-4 shadow-sm mb-4" role="alert">
+            <span class="small fw-medium">@alertMessage</span>
+            <button type="button" class="btn-close" @onclick="() => alertMessage = null"></button>
+        </div>
+    }
+
+    <!-- FILTROS DE CATEGORÍA Y SELECTOR DE VISTA -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-2 overflow-auto py-1">
+            <button class="btn-pill-tag @(activeFilter == "all" ? "active" : "")" @onclick='() => SetFilter("all")'>
+                Todos (@(peopleList?.Count ?? 0))
+            </button>
+            <button class="btn-pill-tag @(activeFilter == "young" ? "active" : "")" @onclick='() => SetFilter("young")'>
+                Jóvenes (25)
+            </button>
+            <button class="btn-pill-tag @(activeFilter == "adult" ? "active" : "")" @onclick='() => SetFilter("adult")'>
+                Adultos (25)
+            </button>
+            <button class="btn-pill-tag @(activeFilter == "senior" ? "active" : "")" @onclick='() => SetFilter("senior")'>
+                Senior (50)
+            </button>
+        </div>
+
+        <!-- Panel de doble botón para intercambiar vista (Tarjetas / Lista) -->
+        <div class="view-toggle-group">
+            <button type="button"
+                    class="view-toggle-btn @(isCardView ? "active" : "")"
+                    @onclick="() => isCardView = true"
+                    title="Vista en Tarjetas">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Tarjetas</span>
+            </button>
+            <button type="button"
+                    class="view-toggle-btn @(!isCardView ? "active" : "")"
+                    @onclick="() => isCardView = false"
+                    title="Vista en Lista">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>Lista</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE REGISTROS -->
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-grow text-dark" role="status" style="width: 2.2rem; height: 2.2rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted small mt-3 mb-0">Consultando API de @ApiService.CurrentServer...</p>
+        </div>
+    }
+    else if (FilteredPeople == null || FilteredPeople.Count == 0)
+    {
+        <div class="empty-state-card text-center p-5 rounded-4 border bg-light bg-opacity-50">
+            <div class="fs-1 mb-2">📭</div>
+            <h5 class="fw-bold text-dark">No hay personas en este filtro</h5>
+            <p class="text-muted small mb-3">Este servidor no tiene registros actualmente o la búsqueda no arrojó coincidencias.</p>
+            <button class="btn-modern-black btn-sm" @onclick="OpenCreateModal">
+                Crear primer registro
+            </button>
+        </div>
+    }
+    else
+    {
+        @if (isCardView)
+        {
+            <!-- GRID DE TARJETAS EN ESTILO PASTEL (3 Columnas para ancho completo) -->
+            <div class="row g-3">
+                @for (int i = 0; i < FilteredPeople.Count; i++)
+                {
+                    var person = FilteredPeople[i];
+                    var pastelClass = GetPastelClass(i);
+
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card-pastel @pastelClass h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <!-- Cabecera de la tarjeta con código de ID y acciones -->
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge rounded-pill bg-white text-dark shadow-xs fw-bold px-2 py-1" style="font-size: 0.72rem;">
+                                        #@person.Id
+                                    </span>
+                                    <div class="d-flex gap-1">
+                                        <button class="circle-dots-btn" @onclick="() => OpenEditModal(person)" title="Editar registro">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                                <path d="m15 5 4 4"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="circle-dots-btn btn-delete-action" @onclick="() => RequestDelete(person)" title="Eliminar registro">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M3 6h18"></path>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                <line x1="10" x2="10" y1="11" y2="17"></line>
+                                                <line x1="14" x2="14" y1="11" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Nombre y Datos -->
+                                <h5 class="fw-bold text-dark mb-1">@person.Name</h5>
+                                <div class="text-muted small mb-0">
+                                    <span>@person.Age años</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- VISTA EN TABLA / LISTA ELEGANTE -->
+            <div class="table-responsive rounded-4 border bg-white shadow-xs p-3">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted small text-uppercase">
+                        <tr class="border-bottom">
+                            <th scope="col" style="width: 90px; font-weight: 700;">ID</th>
+                            <th scope="col" style="font-weight: 700;">Nombre Completo</th>
+                            <th scope="col" style="font-weight: 700;">Edad</th>
+                            <th scope="col" class="text-end" style="width: 140px; font-weight: 700;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var person in FilteredPeople)
+                        {
+                            <tr>
+                                <td class="fw-bold text-muted">
+                                    <span class="badge rounded-pill bg-light text-dark border px-2 py-1" style="font-size: 0.75rem;">
+                                        #@person.Id
+                                    </span>
+                                </td>
+                                <td class="fw-semibold text-dark fs-6">@person.Name</td>
+                                <td>
+                                    <span class="text-muted small">@person.Age años</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="circle-dots-btn me-1" @onclick="() => OpenEditModal(person)" title="Editar registro">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                            <path d="m15 5 4 4"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="circle-dots-btn btn-delete-action" @onclick="() => RequestDelete(person)" title="Eliminar registro">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                            <line x1="10" x2="10" y1="11" y2="17"></line>
+                                            <line x1="14" x2="14" y1="11" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+</div>
+
+<!-- MODAL FLOTANTE DE CREACIÓN / EDICIÓN -->
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(5px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-float" style="border-radius: 28px; overflow: hidden;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <div>
+                        <h4 class="modal-title fw-bold text-dark">
+                            @(isEditing ? "Editar Persona" : "Nueva Persona")
+                        </h4>
+                        <p class="text-muted small mb-0">
+                            Persistencia directa en la base de datos de <strong>@ApiService.CurrentServer</strong>.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    @if (!string.IsNullOrEmpty(modalError))
+                    {
+                        <div class="alert alert-danger py-2 small rounded-3 mb-3 border-0">
+                            @modalError
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary text-uppercase tracking-wider">Nombre Completo</label>
+                        <input type="text"
+                               class="form-control form-control-lg rounded-3 fs-6"
+                               placeholder="Ej: Laura Martínez"
+                               maxlength="100"
+                               @bind="formName"
+                               autofocus />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary text-uppercase tracking-wider">Edad</label>
+                        <input type="number"
+                               class="form-control form-control-lg rounded-3 fs-6"
+                               min="0"
+                               max="120"
+                               @bind="formAge" />
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light bg-opacity-50 px-4 py-3">
+                    <button type="button" class="btn btn-modern-pill" @onclick="CloseModal" disabled="@isSaving">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn-modern-black px-4" @onclick="HandleSaveAsync" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Guardando...</span>
+                        }
+                        else
+                        {
+                            <span>Guardar Registro</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL FLOTANTE DE CONFIRMACIÓN DE ELIMINACIÓN -->
+@if (personToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(5px);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-float" style="border-radius: 28px; overflow: hidden;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="modal-title fw-bold text-dark mb-0">Eliminar Persona</h4>
+                        <p class="text-muted small mb-0">Base de datos: <strong>@ApiService.CurrentServer</strong></p>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+
+                <div class="modal-body p-4 text-center">
+                    <div class="delete-icon-wrapper mb-3 mx-auto">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            <line x1="10" x2="10" y1="11" y2="17"></line>
+                            <line x1="14" x2="14" y1="11" y2="17"></line>
+                        </svg>
+                    </div>
+                    <p class="text-secondary mb-1">¿Estás seguro de que deseas eliminar permanentemente a</p>
+                    <h5 class="fw-bold text-dark mb-2">@personToDelete.Name</h5>
+                    <p class="text-danger small mt-2 mb-0" style="font-size: 0.78rem;">
+                        Esta acción borrará el registro de la base de datos de manera definitiva.
+                    </p>
+                </div>
+
+                <div class="modal-footer border-0 bg-light bg-opacity-50 px-4 py-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-modern-pill" @onclick="CancelDelete" disabled="@isDeleting">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger-pill px-4" @onclick="ConfirmDeleteAsync" disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Eliminando...</span>
+                        }
+                        else
+                        {
+                            <span>Eliminar Registro</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .btn-server-toggle {
+        border-radius: 9999px;
+        padding: 8px 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-server-toggle:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .search-pill-wrapper {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
+        padding: 8px 18px;
+        width: 100%;
+        transition: all 0.2s ease;
+    }
+    .search-pill-wrapper:focus-within {
+        background: #ffffff;
+        border-color: #0f172a;
+        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+    }
+    .search-pill-input {
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 0.92rem;
+        padding: 2px 10px;
+        width: 100%;
+        color: #1e293b;
+    }
+
+    .btn-pill-tag {
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 7px 16px;
+        border-radius: 9999px;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }
+    .btn-pill-tag:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+    .btn-pill-tag.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+
+    .view-toggle-group {
+        display: inline-flex;
+        background: #f1f5f9;
+        padding: 3px;
+        border-radius: 9999px;
+        border: 1px solid #e2e8f0;
+    }
+    .view-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .view-toggle-btn:hover:not(.active) {
+        color: #0f172a;
+    }
+    .view-toggle-btn.active {
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .circle-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .circle-btn:hover {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+
+    .circle-dots-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.75);
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .circle-dots-btn:hover {
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        border-color: #cbd5e1;
+    }
+    .circle-dots-btn.btn-delete-action {
+        color: #64748b;
+    }
+    .circle-dots-btn.btn-delete-action:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #fca5a5;
+    }
+
+    .delete-icon-wrapper {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background-color: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-danger-pill {
+        border-radius: 9999px;
+        background-color: #dc2626;
+        color: #ffffff;
+        font-size: 0.88rem;
+        font-weight: 700;
+        padding: 9px 22px;
+        border: none;
+        transition: all 0.15s ease;
+    }
+    .btn-danger-pill:hover {
+        background-color: #b91c1c;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+</style>
+
+@code {
+    private List<Person>? peopleList;
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string activeFilter = "all";
+    private string? alertMessage;
+    private bool isAlertError;
+    private bool isCardView = true;
+    private bool isInitialLoading = true;
+
+    // Estado del modal de crear / editar
+    private bool showModal;
+    private bool isEditing;
+    private int currentEditingId;
+    private string formName = "";
+    private int formAge = 18;
+    private string? modalError;
+    private bool isSaving;
+
+    // Estado del modal de confirmación de eliminación
+    private Person? personToDelete;
+    private bool isDeleting;
+
+    private List<Person>? FilteredPeople
+    {
+        get
+        {
+            if (peopleList == null) return null;
+            return activeFilter switch
+            {
+                "young" => peopleList.Where(p => p.Age <= 25).ToList(),
+                "adult" => peopleList.Where(p => p.Age > 25 && p.Age < 50).ToList(),
+                "senior" => peopleList.Where(p => p.Age >= 50).ToList(),
+                _ => peopleList
+            };
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApiService.OnServerChanged += HandleExternalServerChange;
+
+        // Carga datos en paralelo con el temporizador de 1.5 segundos
+        var loadTask = LoadPeopleAsync();
+        var timerTask = Task.Delay(1500);
+        await Task.WhenAll(loadTask, timerTask);
+
+        isInitialLoading = false;
+    }
+
+    private void HandleExternalServerChange()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadPeopleAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void SetFilter(string filter)
+    {
+        activeFilter = filter;
+    }
+
+    private async Task HandleToggleServer()
+    {
+        ApiService.ToggleServer();
+        alertMessage = $"Servidor conmutado a: {ApiService.CurrentServer}";
+        isAlertError = false;
+        await LoadPeopleAsync();
+    }
+
+    private async Task LoadPeopleAsync()
+    {
+        try
+        {
+            isLoading = true;
+            modalError = null;
+            peopleList = await ApiService.GetPeopleAsync(searchTerm);
+        }
+        catch (Exception ex)
+        {
+            alertMessage = $"Error de conexión con el servidor {ApiService.CurrentServer} ({ApiService.CurrentBaseUrl}): {ex.Message}";
+            isAlertError = true;
+            peopleList = new List<Person>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoadPeopleAsync();
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        searchTerm = "";
+        await LoadPeopleAsync();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditing = false;
+        currentEditingId = 0;
+        formName = "";
+        formAge = 18;
+        modalError = null;
+        showModal = true;
+    }
+
+    private void OpenEditModal(Person person)
+    {
+        isEditing = true;
+        currentEditingId = person.Id;
+        formName = person.Name;
+        formAge = person.Age;
+        modalError = null;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        modalError = null;
+    }
+
+    private async Task HandleSaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(formName))
+        {
+            modalError = "El nombre es obligatorio.";
+            return;
+        }
+
+        if (formAge < 0 || formAge > 120)
+        {
+            modalError = "La edad debe estar entre 0 y 120 años.";
+            return;
+        }
+
+        try
+        {
+            isSaving = true;
+            modalError = null;
+
+            if (isEditing)
+            {
+                var dto = new PersonUpdateDto { Name = formName.Trim(), Age = formAge };
+                await ApiService.UpdateAsync(currentEditingId, dto);
+                alertMessage = $"Registro ID {currentEditingId} actualizado con éxito en {ApiService.CurrentServer}.";
+            }
+            else
+            {
+                var dto = new PersonCreateDto { Name = formName.Trim(), Age = formAge };
+                var created = await ApiService.CreateAsync(dto);
+                alertMessage = $"Persona '{created.Name}' (ID: {created.Id}) creada exitosamente en {ApiService.CurrentServer}.";
+            }
+
+            isAlertError = false;
+            CloseModal();
+            await LoadPeopleAsync();
+        }
+        catch (Exception ex)
+        {
+            modalError = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void RequestDelete(Person person)
+    {
+        personToDelete = person;
+    }
+
+    private void CancelDelete()
+    {
+        personToDelete = null;
+        isDeleting = false;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (personToDelete == null) return;
+
+        try
+        {
+            isDeleting = true;
+            await ApiService.DeleteAsync(personToDelete.Id);
+            alertMessage = $"Registro '{personToDelete.Name}' (ID: {personToDelete.Id}) eliminado correctamente de {ApiService.CurrentServer}.";
+            isAlertError = false;
+            personToDelete = null;
+            await LoadPeopleAsync();
+        }
+        catch (Exception ex)
+        {
+            alertMessage = ex.Message;
+            isAlertError = true;
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private string GetPastelClass(int index)
+    {
+        string[] classes = { "card-pastel-purple", "card-pastel-yellow", "card-pastel-green", "card-pastel-blue", "card-pastel-coral" };
+        return classes[index % classes.Length];
+    }
+
+    public void Dispose()
+    {
+        ApiService.OnServerChanged -= HandleExternalServerChange;
+    }
+}
