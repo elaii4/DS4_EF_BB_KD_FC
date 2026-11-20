@@ -179,4 +179,27 @@ public class PeopleApiService
             throw new Exception($"Error al eliminar en {CurrentServer}: {ex.Message}", ex);
         }
     }
+
+    public string GetReportPdfUrl(string? search = null)
+    {
+        var endpoint = $"{CurrentBaseUrl}api/people/report/pdf";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            endpoint += $"?search={Uri.EscapeDataString(search.Trim())}";
+        }
+        return endpoint;
+    }
+
+    public async Task<byte[]> DownloadReportPdfBytesAsync(string? search = null)
+    {
+        var endpoint = GetReportPdfUrl(search);
+        try
+        {
+            return await _http.GetByteArrayAsync(endpoint);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new Exception($"Error al generar el reporte en {CurrentServer}: {ex.Message}", ex);
+        }
+    }
 }

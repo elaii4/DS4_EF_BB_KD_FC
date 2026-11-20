@@ -68,7 +68,29 @@
             }
         </div>
 
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Botón Generar Reporte PDF (PdfSharp) -->
+            <button class="btn btn-modern-pill d-flex align-items-center gap-2 shadow-xs"
+                    @onclick="GeneratePdfReportAsync"
+                    disabled="@(isGeneratingReport || isLoading)"
+                    title="Generar y descargar reporte en PDF con PdfSharp">
+                @if (isGeneratingReport)
+                {
+                    <span class="spinner-border spinner-border-sm text-dark"></span>
+                    <span>Generando...</span>
+                }
+                else
+                {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span>Reporte PDF</span>
+                }
+            </button>
+
             <!-- Botón Negro estilo Figma -->
             <button class="btn-modern-black" @onclick="OpenCreateModal">
                 <span>+ Agregar Persona</span>
@@ -549,6 +571,7 @@
     private bool isAlertError;
     private bool isCardView = true;
     private bool isInitialLoading = true;
+    private bool isGeneratingReport;
 
     // Estado del modal de crear / editar
     private bool showModal;
@@ -750,6 +773,31 @@
         finally
         {
             isDeleting = false;
+        }
+    }
+
+    private async Task GeneratePdfReportAsync()
+    {
+        try
+        {
+            isGeneratingReport = true;
+            var pdfBytes = await ApiService.DownloadReportPdfBytesAsync(searchTerm);
+            var base64 = Convert.ToBase64String(pdfBytes);
+            var fileName = $"Reporte_Personas_{ApiService.CurrentServer}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+            await JS.InvokeVoidAsync("downloadFileFromBase64", fileName, base64);
+
+            alertMessage = $"Reporte PDF generado exitosamente desde el servidor {ApiService.CurrentServer}.";
+            isAlertError = false;
+        }
+        catch (Exception ex)
+        {
+            alertMessage = $"Error al generar el reporte PDF: {ex.Message}";
+            isAlertError = true;
+        }
+        finally
+        {
+            isGeneratingReport = false;
         }
     }
 
