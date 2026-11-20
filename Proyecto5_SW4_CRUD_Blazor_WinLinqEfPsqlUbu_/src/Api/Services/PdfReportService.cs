@@ -32,7 +32,6 @@ public static class PdfReportService
         var fontTableHeader = new XFont("Arial", 10, XFontStyle.Bold);
         var fontTableRow = new XFont("Arial", 9, XFontStyle.Regular);
         var fontTableId = new XFont("Arial", 9, XFontStyle.Bold);
-        var fontFooter = new XFont("Arial", 8, XFontStyle.Italic);
 
         // Paleta de colores minimalista profesional
         var colorDark = XColor.FromArgb(15, 23, 42);       // #0f172a
@@ -66,27 +65,26 @@ public static class PdfReportService
         gfx.DrawRoundedRectangle(new XSolidBrush(colorLightBg), rectMeta, new XSize(8, 8));
         gfx.DrawRoundedRectangle(penBorder, rectMeta, new XSize(8, 8));
 
-        double metaCol1 = marginX + 15;
-        double metaCol2 = marginX + 180;
-        double metaCol3 = marginX + 350;
+        var peopleList = new List<Person>(people);
+
+        double metaCol1 = marginX + 18;
+        double metaCol2 = marginX + 270;
         double metaY1 = currentY + 16;
         double metaY2 = currentY + 32;
 
-        gfx.DrawString("Servidor Activo: ", fontMeta, brushSlate, metaCol1, metaY1);
-        gfx.DrawString(serverName, fontMetaBold, brushDark, metaCol1 + 75, metaY1);
+        // Columna 1: Datos del entorno / servidor
+        gfx.DrawString("Servidor Activo:", fontMeta, brushSlate, metaCol1, metaY1);
+        gfx.DrawString(serverName, fontMetaBold, brushDark, metaCol1 + 85, metaY1);
 
-        gfx.DrawString("Base de Datos: ", fontMeta, brushSlate, metaCol1, metaY2);
-        gfx.DrawString(databaseName, fontMetaBold, brushDark, metaCol1 + 75, metaY2);
+        gfx.DrawString("Base de Datos:", fontMeta, brushSlate, metaCol1, metaY2);
+        gfx.DrawString(databaseName, fontMetaBold, brushDark, metaCol1 + 85, metaY2);
 
-        gfx.DrawString("Fecha de Emisión: ", fontMeta, brushSlate, metaCol2, metaY1);
-        gfx.DrawString(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"), fontMetaBold, brushDark, metaCol2 + 90, metaY1);
+        // Columna 2: Emisión y recuento
+        gfx.DrawString("Fecha de Emisión:", fontMeta, brushSlate, metaCol2, metaY1);
+        gfx.DrawString(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"), fontMetaBold, brushDark, metaCol2 + 95, metaY1);
 
-        gfx.DrawString("Filtro Aplicado: ", fontMeta, brushSlate, metaCol2, metaY2);
-        gfx.DrawString(string.IsNullOrWhiteSpace(searchFilter) ? "Ninguno (Todos)" : $"\"{searchFilter}\"", fontMetaBold, brushDark, metaCol2 + 75, metaY2);
-
-        var peopleList = new List<Person>(people);
-        gfx.DrawString("Total Registros: ", fontMeta, brushSlate, metaCol3, metaY1);
-        gfx.DrawString($"{peopleList.Count} persona(s)", fontMetaBold, brushDark, metaCol3 + 80, metaY1);
+        gfx.DrawString("Total Registros:", fontMeta, brushSlate, metaCol2, metaY2);
+        gfx.DrawString($"{peopleList.Count} persona(s)", fontMetaBold, brushDark, metaCol2 + 95, metaY2);
 
         currentY += metaBoxHeight + 20;
 
@@ -161,9 +159,6 @@ public static class PdfReportService
                 rowIndex++;
             }
         }
-
-        currentY += 12;
-        gfx.DrawString($"* Fin del reporte. Mostrando {peopleList.Count} registro(s) verificado(s) en base de datos.", fontFooter, brushSlate, marginX, currentY);
 
         DrawFooter(gfx, page, pageNumber);
 
