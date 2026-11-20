@@ -201,7 +201,7 @@ public class PeopleApiService
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 // Fallback transparente: obtenemos los datos actuales y generamos el PDF usando el endpoint generador local
-                var people = await GetAllAsync(search);
+                var people = await GetPeopleAsync(search);
                 var fallbackPayload = new
                 {
                     People = people,
