@@ -94,6 +94,25 @@ public class PeopleController : ControllerBase
         return File(pdfBytes, "application/pdf", fileName);
     }
 
+    public record GeneratePdfCustomRequest(List<Person>? People, string? ServerName, string? DatabaseName, string? Search);
+
+    // POST: api/people/report/pdf/generate
+    // Permite generar el reporte PDF pasando los datos explícitamente.
+    // Sirve como fallback transparente cuando el servidor remoto (ej: VPS Ubuntu) aún no ha recompilado el endpoint nativo.
+    [HttpPost("report/pdf/generate")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public IActionResult GenerateCustomPdfReport([FromBody] GeneratePdfCustomRequest request)
+    {
+        var people = request.People ?? new List<Person>();
+        var serverName = string.IsNullOrWhiteSpace(request.ServerName) ? "Ubuntu Server (AWS Cloud)" : request.ServerName;
+        var dbName = string.IsNullOrWhiteSpace(request.DatabaseName) ? "crud_windows_forms_ubu" : request.DatabaseName;
+
+        var pdfBytes = Api.Services.PdfReportService.GeneratePeopleReport(people, serverName, dbName, request.Search);
+        var fileName = $"Reporte_Personas_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
     // GET: api/people/{id}
     // Busca una persona especifica por su clave primaria (ID).
     [HttpGet("{id:int}")]

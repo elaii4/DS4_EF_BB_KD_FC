@@ -195,7 +195,31 @@ public class PeopleApiService
         var endpoint = GetReportPdfUrl(search);
         try
         {
-            return await _http.GetByteArrayAsync(endpoint);
+            var response = await _http.GetAsync(endpoint);
+
+            // Si el servidor activo (ej: VPS Ubuntu) responde 404 porque aún no ha desplegado el endpoint nativo:
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Fallback transparente: obtenemos los datos actuales y generamos el PDF usando el endpoint generador local
+                var people = await GetAllAsync(search);
+                var fallbackPayload = new
+                {
+                    People = people,
+                    ServerName = CurrentServer == ServerTarget.Ubuntu ? "Ubuntu Server (AWS Cloud)" : "Windows Server (Local)",
+                    DatabaseName = CurrentServer == ServerTarget.Ubuntu ? "crud_windows_forms_ubu" : "crud_windows_forms_win",
+                    Search = search
+                };
+
+                var fallbackUrl = $"{WindowsUrl}api/people/report/pdf/generate";
+                var localResponse = await _http.PostAsJsonAsync(fallbackUrl, fallbackPayload);
+                if (localResponse.IsSuccessStatusCode)
+                {
+                    return await localResponse.Content.ReadAsByteArrayAsync();
+                }
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
         }
         catch (HttpRequestException ex)
         {
