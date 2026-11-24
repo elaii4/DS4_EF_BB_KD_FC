@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Api.Models;
@@ -30,6 +30,11 @@ public class McpAiOrchestratorService
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true
+    };
+
+    private static readonly JsonSerializerOptions RequestJsonOpts = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     public McpAiOrchestratorService(
@@ -58,7 +63,7 @@ public class McpAiOrchestratorService
         var section = _config.GetSection($"AiProviders:{providerKey}");
 
         var endpoint = section["Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-        var model = section["Model"] ?? "gemini-3.8-flash";
+        var model = section["Model"] ?? "gemini-3.5-flash";
         var apiKey = !string.IsNullOrWhiteSpace(section["ApiKey"]) 
             ? section["ApiKey"] 
             : Environment.GetEnvironmentVariable("GEMINI_API_KEY");
@@ -101,16 +106,29 @@ public class McpAiOrchestratorService
             return response;
         }
 
-        // Convertir al formato de tools de OpenAI (type: "function", function: { name, description, parameters })
-        var openAiTools = mcpTools.Select(t => new
+        // Convertir al formato de tools de OpenAI independizando los schemas de buffers descartados
+        var openAiTools = mcpTools.Select(t =>
         {
-            type = "function",
-            function = new
+            object parametersObj;
+            try
             {
-                name = t.Name,
-                description = t.Description,
-                parameters = t.InputSchema
+                parametersObj = JsonSerializer.Deserialize<object>(t.InputSchema.GetRawText()) ?? new { type = "object" };
             }
+            catch
+            {
+                parametersObj = new { type = "object" };
+            }
+
+            return new
+            {
+                type = "function",
+                function = new
+                {
+                    name = t.Name,
+                    description = t.Description,
+                    parameters = parametersObj
+                }
+            };
         }).ToList();
 
         // 2. Definir system prompt en español con reglas estrictas de operación
@@ -146,9 +164,10 @@ Reglas obligatorias que debes seguir estrictamente:
                 tool_choice = "auto"
             };
 
+            var jsonPayload = JsonSerializer.Serialize(requestBody, RequestJsonOpts);
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
             httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-            httpRequest.Content = JsonContent.Create(requestBody);
+            httpRequest.Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
 
             HttpResponseMessage httpResponse;
             try
@@ -186,9 +205,10 @@ Reglas obligatorias que debes seguir estrictamente:
                         tool_choice = "auto"
                     };
 
+                    var altJson = JsonSerializer.Serialize(altPayload, RequestJsonOpts);
                     using var altReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
                     altReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                    altReq.Content = JsonContent.Create(altPayload);
+                    altReq.Content = new StringContent(altJson, System.Text.Encoding.UTF8, "application/json");
 
                     var altResp = await _httpClient.SendAsync(altReq, ct);
                     if (altResp.IsSuccessStatusCode)
@@ -277,15 +297,18 @@ Reglas obligatorias que debes seguir estrictamente:
             }
 
             // Registrar mensaje del asistente antes de adjuntar las respuestas de tool
+            // IMPORTANTE: Serializar a objeto independiente para no guardar un JsonElement atado al doc desechado
             string? assistantContent = messageProp.TryGetProperty("content", out var ac) && ac.ValueKind == JsonValueKind.String
                 ? ac.GetString()
                 : null;
+
+            var toolCallsCloned = JsonSerializer.Deserialize<object>(toolCallsProp.GetRawText());
 
             messages.Add(new
             {
                 role = "assistant",
                 content = assistantContent,
-                tool_calls = toolCallsProp
+                tool_calls = toolCallsCloned
             });
 
             // Procesar cada tool_call solicitada

@@ -1,1 +1,1 @@
-fix(ai): conmutacion por error automatica y modelo gemini-3.5-flash de alta disponibilidad
+fix(orchestrator): serializar payload con StringContent y clonar tool_calls para evitar stream error
