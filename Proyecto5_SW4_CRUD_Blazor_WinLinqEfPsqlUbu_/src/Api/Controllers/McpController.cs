@@ -46,13 +46,13 @@ public class McpController : ControllerBase
     }
 
     /// <summary>
-    /// Consulta el estado del servidor MCP y las métricas de consumo de tokens en tiempo real.
+    /// Consulta el estado del servidor MCP y las métricas de consumo de tokens en tiempo real de todos los proveedores.
     /// </summary>
     [HttpGet("usage")]
-    public async Task<ActionResult<AiUsageStatusDto>> GetUsage([FromQuery] string provider = "gemini", CancellationToken ct = default)
+    public async Task<ActionResult<McpUsageSummaryDto>> GetUsage([FromQuery] string provider = "gemini", CancellationToken ct = default)
     {
         var isOnline = await _mcpClient.PingAsync(ct);
-        var status = _usageTracker.GetStatus(provider, isOnline);
-        return Ok(status);
+        var summary = _usageTracker.GetSummary(isOnline, provider);
+        return Ok(summary);
     }
 }

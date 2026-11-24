@@ -53,24 +53,58 @@ public class McpAiOrchestratorService
 
     public async Task<McpQueryResponse> ProcessQueryAsync(McpQueryRequest request, CancellationToken ct = default)
     {
+        var normalizedProvider = AiUsageTrackerService.NormalizeKey(request.Provider);
         var response = new McpQueryResponse
         {
-            Provider = request.Provider.ToLowerInvariant(),
+            Provider = normalizedProvider,
             ToolsExecuted = new List<string>()
         };
 
-        var providerKey = string.Equals(request.Provider, "gemini", StringComparison.OrdinalIgnoreCase) ? "Gemini" : request.Provider;
-        var section = _config.GetSection($"AiProviders:{providerKey}");
+        bool isGroq = normalizedProvider == "qwen" || normalizedProvider == "gpt-oss";
 
-        var endpoint = section["Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-        var model = section["Model"] ?? "gemini-3.5-flash";
-        var apiKey = !string.IsNullOrWhiteSpace(section["ApiKey"]) 
-            ? section["ApiKey"] 
-            : Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        string endpoint;
+        string model;
+        string? apiKey;
+        string? reasoningEffort = null;
+        string providerDisplayName;
 
-        if (string.IsNullOrWhiteSpace(apiKey))
+        if (normalizedProvider == "qwen")
         {
-            apiKey = "AQ." + "Ab8RN6KWb5SzUrCh" + "Fc_bC-5T9BoRsmuPW4iFTqn60pDyHXx13g";
+            var sec = _config.GetSection("AiProviders:qwen");
+            endpoint = sec["Endpoint"] ?? "https://api.groq.com/openai/v1/chat/completions";
+            model = sec["Model"] ?? "qwen/qwen3.8-27b";
+            reasoningEffort = sec["ReasoningEffort"];
+            providerDisplayName = "Qwen 3.8 (Groq)";
+            apiKey = _config["AiProviders:Groq:ApiKey"] 
+                ?? Environment.GetEnvironmentVariable("AiProviders__Groq__ApiKey") 
+                ?? Environment.GetEnvironmentVariable("GROQ_API_KEY");
+        }
+        else if (normalizedProvider == "gpt-oss")
+        {
+            var sec = _config.GetSection("AiProviders:gpt-oss");
+            endpoint = sec["Endpoint"] ?? "https://api.groq.com/openai/v1/chat/completions";
+            model = sec["Model"] ?? "openai/gpt-oss-120b";
+            reasoningEffort = sec["ReasoningEffort"];
+            providerDisplayName = "GPT-OSS 120B (Groq)";
+            apiKey = _config["AiProviders:Groq:ApiKey"] 
+                ?? Environment.GetEnvironmentVariable("AiProviders__Groq__ApiKey") 
+                ?? Environment.GetEnvironmentVariable("GROQ_API_KEY");
+        }
+        else
+        {
+            var sec = _config.GetSection("AiProviders:Gemini");
+            endpoint = sec["Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+            model = sec["Model"] ?? "gemini-3.5-flash";
+            providerDisplayName = "Google Gemini";
+            apiKey = sec["ApiKey"] 
+                ?? _config["AiProviders:Gemini:ApiKey"] 
+                ?? Environment.GetEnvironmentVariable("AiProviders__Gemini__ApiKey") 
+                ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                apiKey = "AQ." + "Ab8RN6KWb5SzUrCh" + "Fc_bC-5T9BoRsmuPW4iFTqn60pDyHXx13g";
+            }
         }
 
         response.Model = model;
@@ -78,7 +112,7 @@ public class McpAiOrchestratorService
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             response.IsSuccess = false;
-            response.Reply = "La clave de API de Google Gemini no está configurada. Configure 'AiProviders:Gemini:ApiKey' en appsettings.json o la variable de entorno 'GEMINI_API_KEY'.";
+            response.Reply = $"La clave de API para {providerDisplayName} no está configurada. Configure la clave en UserSecrets o en variables de entorno.";
             response.ErrorMessage = "API Key no configurada.";
             return response;
         }
@@ -154,15 +188,22 @@ Reglas obligatorias que debes seguir estrictamente:
         // 3. Bucle de tool-calling de máximo 5 iteraciones
         for (int iteration = 0; iteration < 5; iteration++)
         {
-            _logger.LogInformation("Iniciando iteración {Iteration} de llamada a IA...", iteration + 1);
+            _logger.LogInformation("Iniciando iteración {Iteration} de llamada a IA ({Provider}/{Model})...", iteration + 1, normalizedProvider, model);
 
-            var requestBody = new
+            var requestBody = new Dictionary<string, object?>
             {
-                model = model,
-                messages = messages,
-                tools = openAiTools,
-                tool_choice = "auto"
+                ["model"] = model,
+                ["messages"] = messages,
+                ["tools"] = openAiTools,
+                ["tool_choice"] = "auto",
+                ["temperature"] = 0
             };
+
+            // Incluir reasoning_effort únicamente si está configurado y no es Gemini
+            if (!string.IsNullOrWhiteSpace(reasoningEffort) && isGroq)
+            {
+                requestBody["reasoning_effort"] = reasoningEffort;
+            }
 
             var jsonPayload = JsonSerializer.Serialize(requestBody, RequestJsonOpts);
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -176,47 +217,51 @@ Reglas obligatorias que debes seguir estrictamente:
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al enviar solicitud HTTP a Gemini.");
+                _logger.LogError(ex, "Error al enviar solicitud HTTP a {Provider}", providerDisplayName);
                 response.IsSuccess = false;
-                response.Reply = $"Error de red al conectar con Google Gemini: {ex.Message}";
+                response.Reply = $"Error de red al conectar con {providerDisplayName}: {ex.Message}";
                 response.ErrorMessage = ex.Message;
                 return response;
             }
 
             // Manejo de alta demanda o saturación temporal (HTTP 503 / 429) con conmutación por error
-            if (httpResponse.StatusCode == HttpStatusCode.ServiceUnavailable ||
-                httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
+            if (httpResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
-                _logger.LogWarning("Gemini API respondió con {Status} para modelo '{Model}'. Probando modelos alternativos...", httpResponse.StatusCode, model);
+                _logger.LogWarning("{Provider} API respondió con 503 para modelo '{Model}'.", providerDisplayName, model);
 
-                string[] alternativeModels = { "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest" };
-                foreach (var altModel in alternativeModels)
+                // Si es Gemini, probar modelos alternativos disponibles
+                if (!isGroq)
                 {
-                    if (string.Equals(altModel, model, StringComparison.OrdinalIgnoreCase)) continue;
-
-                    await Task.Delay(1000, ct);
-                    _logger.LogInformation("Reintentando con modelo de respaldo de alta disponibilidad: {AltModel}", altModel);
-
-                    var altPayload = new
+                    string[] alternativeModels = { "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest" };
+                    foreach (var altModel in alternativeModels)
                     {
-                        model = altModel,
-                        messages = messages,
-                        tools = openAiTools,
-                        tool_choice = "auto"
-                    };
+                        if (string.Equals(altModel, model, StringComparison.OrdinalIgnoreCase)) continue;
 
-                    var altJson = JsonSerializer.Serialize(altPayload, RequestJsonOpts);
-                    using var altReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
-                    altReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                    altReq.Content = new StringContent(altJson, System.Text.Encoding.UTF8, "application/json");
+                        await Task.Delay(1000, ct);
+                        _logger.LogInformation("Reintentando con modelo de respaldo de Gemini: {AltModel}", altModel);
 
-                    var altResp = await _httpClient.SendAsync(altReq, ct);
-                    if (altResp.IsSuccessStatusCode)
-                    {
-                        httpResponse = altResp;
-                        model = altModel;
-                        response.Model = altModel;
-                        break;
+                        var altPayload = new Dictionary<string, object?>
+                        {
+                            ["model"] = altModel,
+                            ["messages"] = messages,
+                            ["tools"] = openAiTools,
+                            ["tool_choice"] = "auto",
+                            ["temperature"] = 0
+                        };
+
+                        var altJson = JsonSerializer.Serialize(altPayload, RequestJsonOpts);
+                        using var altReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                        altReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                        altReq.Content = new StringContent(altJson, System.Text.Encoding.UTF8, "application/json");
+
+                        var altResp = await _httpClient.SendAsync(altReq, ct);
+                        if (altResp.IsSuccessStatusCode)
+                        {
+                            httpResponse = altResp;
+                            model = altModel;
+                            response.Model = altModel;
+                            break;
+                        }
                     }
                 }
             }
@@ -224,7 +269,14 @@ Reglas obligatorias que debes seguir estrictamente:
             if (httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 response.IsSuccess = false;
-                response.Reply = "Límite de tasa de solicitudes (HTTP 429 Too Many Requests) alcanzado en la API de Google Gemini. Por favor espera unos momentos e intenta de nuevo.";
+                if (isGroq)
+                {
+                    response.Reply = "Se ha alcanzado el límite de solicitudes por minuto de Groq (HTTP 429 Rate Limit). Por favor espera unos segundos o selecciona otro modelo (Gemini o GPT-OSS 120B).";
+                }
+                else
+                {
+                    response.Reply = "Límite de tasa de solicitudes (HTTP 429 Too Many Requests) alcanzado en la API de Google Gemini. Por favor espera unos momentos e intenta de nuevo.";
+                }
                 response.ErrorMessage = "Rate limit 429";
                 return response;
             }
@@ -232,7 +284,7 @@ Reglas obligatorias que debes seguir estrictamente:
             if (httpResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
                 response.IsSuccess = false;
-                response.Reply = "Los servidores de Google Gemini se encuentran temporalmente con alta demanda (Error 503). Por favor intenta de nuevo en unos segundos.";
+                response.Reply = $"Los servidores de {providerDisplayName} se encuentran temporalmente con alta demanda (Error 503). Por favor intenta de nuevo en unos segundos.";
                 response.ErrorMessage = "503 Service Unavailable";
                 return response;
             }
@@ -240,9 +292,9 @@ Reglas obligatorias que debes seguir estrictamente:
             if (!httpResponse.IsSuccessStatusCode)
             {
                 var errorBody = await httpResponse.Content.ReadAsStringAsync(ct);
-                _logger.LogError("Error recibido de Gemini API ({Status}): {Body}", httpResponse.StatusCode, errorBody);
+                _logger.LogError("Error recibido de {Provider} ({Status}): {Body}", providerDisplayName, httpResponse.StatusCode, errorBody);
                 response.IsSuccess = false;
-                response.Reply = $"Error en la API de Gemini ({httpResponse.StatusCode}): {errorBody}";
+                response.Reply = $"Error en la API de {providerDisplayName} ({httpResponse.StatusCode}): {errorBody}";
                 response.ErrorMessage = errorBody;
                 return response;
             }
@@ -375,7 +427,7 @@ Reglas obligatorias que debes seguir estrictamente:
         }
 
         // Registrar tokens consumidos en el tracker singleton
-        _usageTracker.RegisterUsage("gemini", totalTokensUsed);
+        _usageTracker.RegisterUsage(normalizedProvider, totalTokensUsed);
 
         response.TokensUsed = totalTokensUsed;
         response.DatabaseModified = databaseModified;

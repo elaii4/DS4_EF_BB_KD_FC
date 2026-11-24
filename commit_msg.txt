@@ -1,1 +1,0 @@
-fix(orchestrator): serializar payload con StringContent y clonar tool_calls para evitar stream error

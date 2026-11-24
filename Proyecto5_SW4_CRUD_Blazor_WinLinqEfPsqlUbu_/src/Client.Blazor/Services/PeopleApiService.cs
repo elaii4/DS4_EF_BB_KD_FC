@@ -269,12 +269,12 @@ public class PeopleApiService
         }
     }
 
-    public async Task<AiUsageStatusDto?> GetMcpUsageAsync(string provider = "gemini")
+    public async Task<McpUsageSummaryDto?> GetMcpUsageAsync(string provider = "gemini")
     {
         var endpoint = $"{CurrentBaseUrl}api/mcp/usage?provider={provider}";
         try
         {
-            return await _http.GetFromJsonAsync<AiUsageStatusDto>(endpoint);
+            return await _http.GetFromJsonAsync<McpUsageSummaryDto>(endpoint);
         }
         catch
         {
