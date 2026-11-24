@@ -164,11 +164,56 @@ Reglas obligatorias que debes seguir estrictamente:
                 return response;
             }
 
+            // Manejo de alta demanda o saturación temporal (HTTP 503 / 429) con conmutación por error
+            if (httpResponse.StatusCode == HttpStatusCode.ServiceUnavailable ||
+                httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                _logger.LogWarning("Gemini API respondió con {Status} para modelo '{Model}'. Probando modelos alternativos...", httpResponse.StatusCode, model);
+
+                string[] alternativeModels = { "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest" };
+                foreach (var altModel in alternativeModels)
+                {
+                    if (string.Equals(altModel, model, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    await Task.Delay(1000, ct);
+                    _logger.LogInformation("Reintentando con modelo de respaldo de alta disponibilidad: {AltModel}", altModel);
+
+                    var altPayload = new
+                    {
+                        model = altModel,
+                        messages = messages,
+                        tools = openAiTools,
+                        tool_choice = "auto"
+                    };
+
+                    using var altReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                    altReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                    altReq.Content = JsonContent.Create(altPayload);
+
+                    var altResp = await _httpClient.SendAsync(altReq, ct);
+                    if (altResp.IsSuccessStatusCode)
+                    {
+                        httpResponse = altResp;
+                        model = altModel;
+                        response.Model = altModel;
+                        break;
+                    }
+                }
+            }
+
             if (httpResponse.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 response.IsSuccess = false;
                 response.Reply = "Límite de tasa de solicitudes (HTTP 429 Too Many Requests) alcanzado en la API de Google Gemini. Por favor espera unos momentos e intenta de nuevo.";
                 response.ErrorMessage = "Rate limit 429";
+                return response;
+            }
+
+            if (httpResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                response.IsSuccess = false;
+                response.Reply = "Los servidores de Google Gemini se encuentran temporalmente con alta demanda (Error 503). Por favor intenta de nuevo en unos segundos.";
+                response.ErrorMessage = "503 Service Unavailable";
                 return response;
             }
 

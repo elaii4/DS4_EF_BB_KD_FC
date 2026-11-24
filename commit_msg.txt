@@ -1,1 +1,1 @@
-fix: asegurar clave gemini en entorno y fallback transparente
+fix(ai): conmutacion por error automatica y modelo gemini-3.5-flash de alta disponibilidad
