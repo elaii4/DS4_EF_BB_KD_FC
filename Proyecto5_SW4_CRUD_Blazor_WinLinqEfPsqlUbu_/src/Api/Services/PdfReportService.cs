@@ -8,7 +8,7 @@ using PdfSharpCore.Pdf;
 namespace Api.Services;
 
 // PdfReportService
-// Generador de reportes en PDF con PdfSharpCore para el listado de personas.
+// Generador de reportes en PDF con PdfSharpCore.
 // Replica el formato de la vista de lista con columnas ID, Nombre Completo y Edad.
 public static class PdfReportService
 {
@@ -49,7 +49,7 @@ public static class PdfReportService
         double currentY = 40;
         double printableWidth = page.Width - (2 * marginX);
 
-        // 1. Encabezado institucional
+        // 1. Encabezado
         gfx.DrawString("DIRECTORIO DE PERSONAS", fontTitle, brushDark, marginX, currentY);
         currentY += 18;
         gfx.DrawString("Reporte oficial de registros en sistema desacoplado (.NET 8 & PostgreSQL)", fontSubtitle, brushSlate, marginX, currentY);

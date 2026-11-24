@@ -18,4 +18,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Mcp.Client\Mcp.Client.csproj" />
+  </ItemGroup>
+
 </Project>
