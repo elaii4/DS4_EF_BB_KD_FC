@@ -1,4 +1,5 @@
 @page "/"
+@using System.Linq
 @implements IDisposable
 @inject PeopleApiService ApiService
 @inject IJSRuntime JS
@@ -12,18 +13,23 @@
 
 <div class="main-dashboard p-4 p-md-5 w-100">
 
-    <!-- BARRA SUPERIOR: Breadcrumb, Conmutador y Refresh -->
+    <!-- BARRA SUPERIOR -->
     <header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <!-- Breadcrumb -->
         <div class="d-flex align-items-center gap-2 text-muted small" style="font-size: 0.88rem;">
             <span>DS4 Hub</span>
             <span>›</span>
             <span class="text-dark fw-semibold">Gestión de Personas</span>
         </div>
 
-        <!-- Acciones derechas: Conmutador de Servidor y Refresh -->
         <div class="d-flex align-items-center gap-3 ms-auto">
-            <!-- SERVIDOR SWITCH (AZUL WIN / NARANJA LIN) -->
+
+            <button type="button" class="btn-mcp-toggle shadow-sm"
+                    @onclick="() => showMcpPanel = true"
+                    title="Abrir centro de control MCP">
+                <span class="mcp-button-icon">✦</span>
+                <span>MCP</span>
+            </button>
+
             <button type="button"
                     class="btn btn-server-toggle shadow-sm d-flex align-items-center gap-2"
                     style="@(ApiService.CurrentServer == ServerTarget.Windows ? "background-color: #0078d7; color: white;" : "background-color: #e95420; color: white;")"
@@ -33,7 +39,6 @@
                 <span>@(ApiService.CurrentServer == ServerTarget.Windows ? "Servidor Win" : "Servidor Lin")</span>
             </button>
 
-            <!-- Botón circular Refresh -->
             <button class="circle-btn" @onclick="LoadPeopleAsync" disabled="@isLoading" title="Recargar lista">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <polyline points="23 4 23 10 17 10"></polyline>
@@ -44,24 +49,24 @@
         </div>
     </header>
 
-    <!-- TÍTULO PRINCIPAL Y BARRA DE ACCIÓN -->
+    <!-- TÍTULO Y BARRA DE ACCIÓN -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom border-light">
         <div>
             <h1 class="display-6 fw-bold tracking-tight text-dark mb-0" style="font-size: 1.85rem;">Directorio de Personas</h1>
         </div>
 
-        <!-- Barra de búsqueda agrandada -->
         <div class="flex-grow-1 mx-md-4 search-pill-wrapper" style="max-width: 680px;">
             <svg width="17" height="17" fill="none" stroke="#94a3b8" stroke-width="2.5" viewBox="0 0 24 24" class="ms-2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text"
-                   class="search-pill-input"
+
+            <input type="text" class="search-pill-input"
                    placeholder="Buscar por nombre..."
                    @bind="searchTerm"
                    @bind:event="oninput"
                    @onkeyup="HandleSearchKeyUp" />
+
             @if (!string.IsNullOrEmpty(searchTerm))
             {
                 <button class="btn btn-sm btn-link text-muted p-0 me-2 text-decoration-none" @onclick="ClearSearch">✕</button>
@@ -69,11 +74,11 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
-            <!-- Botón Generar Reporte PDF (PdfSharp) -->
             <button class="btn btn-modern-pill d-flex align-items-center gap-2 shadow-xs"
                     @onclick="GeneratePdfReportAsync"
                     disabled="@(isGeneratingReport || isLoading)"
                     title="Generar y descargar reporte en PDF con PdfSharp">
+
                 @if (isGeneratingReport)
                 {
                     <span class="spinner-border spinner-border-sm text-dark"></span>
@@ -91,14 +96,13 @@
                 }
             </button>
 
-            <!-- Botón Negro estilo Figma -->
             <button class="btn-modern-black" @onclick="OpenCreateModal">
                 <span>+ Agregar Persona</span>
             </button>
         </div>
     </div>
 
-    <!-- ALERTA / FEEDBACK -->
+    <!-- ALERTAS -->
     @if (!string.IsNullOrEmpty(alertMessage))
     {
         <div class="alert @(isAlertError ? "alert-danger" : "alert-success") alert-dismissible fade show border-0 rounded-4 shadow-sm mb-4" role="alert">
@@ -107,7 +111,7 @@
         </div>
     }
 
-    <!-- FILTROS DE CATEGORÍA Y SELECTOR DE VISTA -->
+    <!-- FILTROS Y VISTAS -->
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div class="d-flex align-items-center gap-2 overflow-auto py-1">
             <button class="btn-pill-tag @(activeFilter == "all" ? "active" : "")" @onclick='() => SetFilter("all")'>
@@ -124,12 +128,9 @@
             </button>
         </div>
 
-        <!-- Panel de doble botón para intercambiar vista (Tarjetas / Lista) -->
         <div class="view-toggle-group">
-            <button type="button"
-                    class="view-toggle-btn @(isCardView ? "active" : "")"
-                    @onclick="() => isCardView = true"
-                    title="Vista en Tarjetas">
+            <button type="button" class="view-toggle-btn @(isCardView ? "active" : "")"
+                    @onclick="() => isCardView = true" title="Vista en Tarjetas">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
@@ -138,10 +139,9 @@
                 </svg>
                 <span>Tarjetas</span>
             </button>
-            <button type="button"
-                    class="view-toggle-btn @(!isCardView ? "active" : "")"
-                    @onclick="() => isCardView = false"
-                    title="Vista en Lista">
+
+            <button type="button" class="view-toggle-btn @(!isCardView ? "active" : "")"
+                    @onclick="() => isCardView = false" title="Vista en Lista">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="8" y1="6" x2="21" y2="6"></line>
                     <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -155,7 +155,7 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR DE REGISTROS -->
+    <!-- REGISTROS -->
     @if (isLoading)
     {
         <div class="text-center py-5">
@@ -180,7 +180,6 @@
     {
         @if (isCardView)
         {
-            <!-- GRID DE TARJETAS EN ESTILO PASTEL (3 Columnas para ancho completo) -->
             <div class="row g-3">
                 @for (int i = 0; i < FilteredPeople.Count; i++)
                 {
@@ -190,11 +189,11 @@
                     <div class="col-md-6 col-lg-4">
                         <div class="card-pastel @pastelClass h-100 d-flex flex-column justify-content-between">
                             <div>
-                                <!-- Cabecera de la tarjeta con código de ID y acciones -->
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <span class="badge rounded-pill bg-white text-dark shadow-xs fw-bold px-2 py-1" style="font-size: 0.72rem;">
                                         #@person.Id
                                     </span>
+
                                     <div class="d-flex gap-1">
                                         <button class="circle-dots-btn" @onclick="() => OpenEditModal(person)" title="Editar registro">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -202,6 +201,7 @@
                                                 <path d="m15 5 4 4"></path>
                                             </svg>
                                         </button>
+
                                         <button class="circle-dots-btn btn-delete-action" @onclick="() => RequestDelete(person)" title="Eliminar registro">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M3 6h18"></path>
@@ -214,7 +214,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Nombre y Datos -->
                                 <h5 class="fw-bold text-dark mb-1">@person.Name</h5>
                                 <div class="text-muted small mb-0">
                                     <span>@person.Age años</span>
@@ -227,7 +226,6 @@
         }
         else
         {
-            <!-- VISTA EN TABLA / LISTA ELEGANTE -->
             <div class="table-responsive rounded-4 border bg-white shadow-xs p-3">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="text-muted small text-uppercase">
@@ -238,6 +236,7 @@
                             <th scope="col" class="text-end" style="width: 140px; font-weight: 700;">Acciones</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @foreach (var person in FilteredPeople)
                         {
@@ -247,10 +246,13 @@
                                         #@person.Id
                                     </span>
                                 </td>
+
                                 <td class="fw-semibold text-dark fs-6">@person.Name</td>
+
                                 <td>
                                     <span class="text-muted small">@person.Age años</span>
                                 </td>
+
                                 <td class="text-end">
                                     <button class="circle-dots-btn me-1" @onclick="() => OpenEditModal(person)" title="Editar registro">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -258,6 +260,7 @@
                                             <path d="m15 5 4 4"></path>
                                         </svg>
                                     </button>
+
                                     <button class="circle-dots-btn btn-delete-action" @onclick="() => RequestDelete(person)" title="Eliminar registro">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M3 6h18"></path>
@@ -278,7 +281,7 @@
 
 </div>
 
-<!-- MODAL FLOTANTE DE CREACIÓN / EDICIÓN -->
+<!-- MODAL DE CREACIÓN Y EDICIÓN -->
 @if (showModal)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(5px);">
@@ -306,21 +309,15 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary text-uppercase tracking-wider">Nombre Completo</label>
-                        <input type="text"
-                               class="form-control form-control-lg rounded-3 fs-6"
-                               placeholder="Ej: Laura Martínez"
-                               maxlength="100"
-                               @bind="formName"
-                               autofocus />
+                        <input type="text" class="form-control form-control-lg rounded-3 fs-6"
+                               placeholder="Ej: Laura Martínez" maxlength="100"
+                               @bind="formName" autofocus />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary text-uppercase tracking-wider">Edad</label>
-                        <input type="number"
-                               class="form-control form-control-lg rounded-3 fs-6"
-                               min="0"
-                               max="120"
-                               @bind="formAge" />
+                        <input type="number" class="form-control form-control-lg rounded-3 fs-6"
+                               min="0" max="120" @bind="formAge" />
                     </div>
                 </div>
 
@@ -328,6 +325,7 @@
                     <button type="button" class="btn btn-modern-pill" @onclick="CloseModal" disabled="@isSaving">
                         Cancelar
                     </button>
+
                     <button type="button" class="btn-modern-black px-4" @onclick="HandleSaveAsync" disabled="@isSaving">
                         @if (isSaving)
                         {
@@ -345,7 +343,7 @@
     </div>
 }
 
-<!-- MODAL FLOTANTE DE CONFIRMACIÓN DE ELIMINACIÓN -->
+<!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
 @if (personToDelete != null)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(5px);">
@@ -369,8 +367,10 @@
                             <line x1="14" x2="14" y1="11" y2="17"></line>
                         </svg>
                     </div>
+
                     <p class="text-secondary mb-1">¿Estás seguro de que deseas eliminar permanentemente a</p>
                     <h5 class="fw-bold text-dark mb-2">@personToDelete.Name</h5>
+
                     <p class="text-danger small mt-2 mb-0" style="font-size: 0.78rem;">
                         Esta acción borrará el registro de la base de datos de manera definitiva.
                     </p>
@@ -380,6 +380,7 @@
                     <button type="button" class="btn btn-modern-pill" @onclick="CancelDelete" disabled="@isDeleting">
                         Cancelar
                     </button>
+
                     <button type="button" class="btn btn-danger-pill px-4" @onclick="ConfirmDeleteAsync" disabled="@isDeleting">
                         @if (isDeleting)
                         {
@@ -397,6 +398,172 @@
     </div>
 }
 
+<!-- PANEL FLOTANTE MCP -->
+@if (showMcpPanel)
+{
+    <div class="mcp-overlay" @onclick="CloseMcpPanel">
+        <div class="mcp-panel" @onclick:stopPropagation="true">
+
+            <!-- ENCABEZADO -->
+            <div class="mcp-header">
+                <div>
+                    <span class="mcp-label">CENTRO DE CONTROL</span>
+                    <h4>Conexión MCP</h4>
+                    <p>Administración de servidores e inteligencia artificial</p>
+                </div>
+
+                <button class="mcp-close" @onclick="CloseMcpPanel" title="Cerrar panel">✕</button>
+            </div>
+
+            <!-- CONTROL DEL SERVIDOR -->
+            <div class="mcp-server-box">
+                <div class="mcp-server-title">
+                    <div class="mcp-server-title-icon">⌘</div>
+                    <div>
+                        <h5>Control del servidor</h5>
+                        <span>Administración del estado del servicio MCP</span>
+                    </div>
+                </div>
+
+                <div class="mcp-server-actions">
+
+                    <button class="mcp-start-btn"
+                            @onclick="StartMcpServer"
+                            title="El servidor MCP aún no está integrado">
+                        <span>▶</span> Iniciar
+                    </button>
+
+                    <button class="mcp-stop-btn"
+                            disabled
+                            title="No existe un servidor MCP activo">
+                        <span>■</span> Detener
+                    </button>
+
+                    <div class="mcp-status">
+                        <span class="mcp-status-dot disconnected"></span>
+                        <span>Sin conexión</span>
+                    </div>
+
+                    <div class="mcp-port">
+                        <span>Puerto</span>
+                        <strong>8080</strong>
+                    </div>
+
+                </div>
+
+                @if (!string.IsNullOrEmpty(mcpServerFeedback))
+                {
+                    <div class="mcp-query-feedback">
+                        <span class="mcp-feedback-icon">ⓘ</span>
+                        @mcpServerFeedback
+                    </div>
+                }
+            </div>
+
+            <!-- CONSULTAS MCP -->
+            <div class="mcp-query-section">
+                <div class="mcp-section-heading">
+                    <div class="mcp-heading-icon">✎</div>
+                    <div>
+                        <h5>Consultas MCP</h5>
+                        <span>Escribe una instrucción para el servidor</span>
+                    </div>
+                </div>
+
+                <textarea class="mcp-query-input"
+                          @bind="mcpQuery"
+                          placeholder="Escribe tu consulta aquí...&#10;&#10;Ejemplo: Obtén la lista de personas registradas."
+                          rows="4"></textarea>
+
+                <div class="mcp-query-footer">
+                    <span class="mcp-query-hint">
+                        <span class="mcp-hint-dot"></span>
+                        Servidor pendiente de integración.
+                    </span>
+
+                    <button class="mcp-send-btn"
+                            @onclick="SendMcpQuery"
+                            disabled="@string.IsNullOrWhiteSpace(mcpQuery)">
+                        <span>Enviar consulta</span>
+                        <span>➤</span>
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mcpQueryFeedback))
+                {
+                    <div class="mcp-query-feedback">
+                        <span class="mcp-feedback-icon">ⓘ</span>
+                        @mcpQueryFeedback
+                    </div>
+                }
+            </div>
+
+            <!-- MONITOR DE INTELIGENCIAS ARTIFICIALES -->
+            <div class="mcp-section">
+                <div class="mcp-section-heading">
+                    <div class="mcp-heading-icon">◈</div>
+                    <div>
+                        <h5>Monitor de IAs</h5>
+                        <span>Consumo de tokens por plataforma</span>
+                    </div>
+                    <span class="mcp-live-indicator">● DEMO</span>
+                </div>
+
+                <div class="mcp-ai-grid">
+
+                    <!-- GEMINI -->
+                    <div class="mcp-ai-card">
+                        <div class="mcp-ai-name">
+                            <span class="mcp-ai-icon gemini-icon">✦</span>
+                            <span>Gemini</span>
+                            <span class="mcp-ai-demo-label">DEMO</span>
+                        </div>
+
+                        <div class="mcp-progress">
+                            <div style="width: 8.2%"></div>
+                        </div>
+
+                        <div class="mcp-token-info">
+                            <span>Usados: <strong>8,200</strong></span>
+                            <span>Disponibles: <strong>91,800</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- GROK -->
+                    <div class="mcp-ai-card">
+                        <div class="mcp-ai-name">
+                            <span class="mcp-ai-icon grok-icon">✕</span>
+                            <span>Grok</span>
+                            <span class="mcp-ai-demo-label">DEMO</span>
+                        </div>
+
+                        <div class="mcp-progress grok-progress">
+                            <div style="width: 4.1%"></div>
+                        </div>
+
+                        <div class="mcp-token-info">
+                            <span>Usados: <strong>4,100</strong></span>
+                            <span>Disponibles: <strong>95,900</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="mcp-demo-note">
+                    Datos de demostración. Gemini y Grok se muestran únicamente como referencia visual.
+                    No están conectados, no reciben consultas y no consumen tokens reales.
+                </p>
+            </div>
+
+            <!-- PIE DEL PANEL -->
+            <div class="mcp-panel-footer">
+                <span>DS4 Hub · Integración MCP</span>
+                <span>Panel de administración</span>
+            </div>
+
+        </div>
+    </div>
+}
+
 <style>
     .btn-server-toggle {
         border-radius: 9999px;
@@ -406,10 +573,11 @@
         border: none;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .btn-server-toggle:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    }
+
+        .btn-server-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
 
     .search-pill-wrapper {
         display: flex;
@@ -421,11 +589,13 @@
         width: 100%;
         transition: all 0.2s ease;
     }
-    .search-pill-wrapper:focus-within {
-        background: #ffffff;
-        border-color: #0f172a;
-        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
-    }
+
+        .search-pill-wrapper:focus-within {
+            background: #ffffff;
+            border-color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+        }
+
     .search-pill-input {
         border: none;
         background: transparent;
@@ -448,15 +618,17 @@
         transition: all 0.15s ease;
         cursor: pointer;
     }
-    .btn-pill-tag:hover {
-        background: #f1f5f9;
-        color: #0f172a;
-    }
-    .btn-pill-tag.active {
-        background: #0f172a;
-        color: #ffffff;
-        border-color: #0f172a;
-    }
+
+        .btn-pill-tag:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .btn-pill-tag.active {
+            background: #0f172a;
+            color: #ffffff;
+            border-color: #0f172a;
+        }
 
     .view-toggle-group {
         display: inline-flex;
@@ -465,6 +637,7 @@
         border-radius: 9999px;
         border: 1px solid #e2e8f0;
     }
+
     .view-toggle-btn {
         display: inline-flex;
         align-items: center;
@@ -479,14 +652,16 @@
         cursor: pointer;
         transition: all 0.15s ease;
     }
-    .view-toggle-btn:hover:not(.active) {
-        color: #0f172a;
-    }
-    .view-toggle-btn.active {
-        background: #ffffff;
-        color: #0f172a;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    }
+
+        .view-toggle-btn:hover:not(.active) {
+            color: #0f172a;
+        }
+
+        .view-toggle-btn.active {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
 
     .circle-btn {
         width: 38px;
@@ -501,11 +676,12 @@
         cursor: pointer;
         transition: all 0.15s ease;
     }
-    .circle-btn:hover {
-        background: #f8fafc;
-        color: #0f172a;
-        border-color: #cbd5e1;
-    }
+
+        .circle-btn:hover {
+            background: #f8fafc;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
 
     .circle-dots-btn {
         width: 30px;
@@ -520,20 +696,23 @@
         cursor: pointer;
         transition: all 0.15s ease;
     }
-    .circle-dots-btn:hover {
-        background: #ffffff;
-        color: #0f172a;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        border-color: #cbd5e1;
-    }
-    .circle-dots-btn.btn-delete-action {
-        color: #64748b;
-    }
-    .circle-dots-btn.btn-delete-action:hover {
-        background: #fee2e2;
-        color: #dc2626;
-        border-color: #fca5a5;
-    }
+
+        .circle-dots-btn:hover {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .circle-dots-btn.btn-delete-action {
+            color: #64748b;
+        }
+
+            .circle-dots-btn.btn-delete-action:hover {
+                background: #fee2e2;
+                color: #dc2626;
+                border-color: #fca5a5;
+            }
 
     .delete-icon-wrapper {
         width: 52px;
@@ -555,10 +734,570 @@
         border: none;
         transition: all 0.15s ease;
     }
-    .btn-danger-pill:hover {
-        background-color: #b91c1c;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+
+        .btn-danger-pill:hover {
+            background-color: #b91c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        }
+
+    /* BOTÓN MCP */
+    .btn-mcp-toggle {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 19px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #252936, #111827);
+        color: #ffffff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .btn-mcp-toggle:hover {
+            background: linear-gradient(135deg, #394150, #202938);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(15, 23, 42, 0.2);
+        }
+
+    .mcp-button-icon {
+        color: #a5b4fc;
+        font-size: 1.1rem;
+    }
+
+    /* FONDO Y CONTENEDOR DEL PANEL MCP */
+    .mcp-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.48);
+        backdrop-filter: blur(6px);
+    }
+
+    .mcp-panel {
+        width: 100%;
+        max-width: 760px;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 26px;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        background: #ffffff;
+        color: #1e293b;
+        box-shadow: 0 25px 80px rgba(15, 23, 42, 0.2);
+        animation: mcpAppear 0.22s ease;
+    }
+
+    @@keyframes mcpAppear {
+        from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.98);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* ENCABEZADO MCP */
+    .mcp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 22px;
+    }
+
+    .mcp-label {
+        color: #7055d9;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+    }
+
+    .mcp-header h4 {
+        margin: 5px 0;
+        font-size: 1.4rem;
+        font-weight: 750;
+        color: #1e293b;
+    }
+
+    .mcp-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.82rem;
+    }
+
+    .mcp-close {
+        width: 34px;
+        height: 34px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .mcp-close:hover {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+    /* CONTROL DEL SERVIDOR */
+    .mcp-server-box {
+        padding: 17px;
+        margin-bottom: 20px;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        background: #ffffff;
+    }
+
+    .mcp-server-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-bottom: 15px;
+    }
+
+    .mcp-server-title-icon,
+    .mcp-heading-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: #f1edff;
+        color: #7055d9;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .mcp-server-title h5 {
+        margin: 0 0 3px;
+        color: #1e293b;
+        font-size: 0.9rem;
+        font-weight: 750;
+    }
+
+    .mcp-server-title span {
+        color: #94a3b8;
+        font-size: 0.72rem;
+    }
+
+    .mcp-server-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .mcp-start-btn,
+    .mcp-stop-btn {
+        padding: 8px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 9px;
+        font-size: 0.82rem;
+        font-weight: 650;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mcp-start-btn {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #15803d;
+    }
+
+        .mcp-start-btn:hover:not(:disabled) {
+            background: #dcfce7;
+            border-color: #86efac;
+        }
+
+    .mcp-stop-btn {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #be123c;
+    }
+
+        .mcp-stop-btn:hover:not(:disabled) {
+            background: #ffe4e6;
+            border-color: #fda4af;
+        }
+
+        .mcp-start-btn:disabled,
+        .mcp-stop-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+    .mcp-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .mcp-status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+    }
+
+        .mcp-status-dot.connected {
+            background: #22c55e;
+            box-shadow: 0 0 0 3px #dcfce7;
+        }
+
+        .mcp-status-dot.disconnected {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px #fee2e2;
+        }
+
+    .mcp-port {
+        margin-left: auto;
+        padding: 7px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.76rem;
+    }
+
+        .mcp-port strong {
+            color: #334155;
+            margin-left: 4px;
+        }
+
+    /* ENCABEZADOS DE LAS SECCIONES */
+    .mcp-section {
+        margin-bottom: 20px;
+    }
+
+    .mcp-section-heading {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-bottom: 14px;
+    }
+
+        .mcp-section-heading h5 {
+            margin: 0 0 4px;
+            font-size: 0.95rem;
+            font-weight: 750;
+            color: #1e293b;
+        }
+
+        .mcp-section-heading span {
+            color: #94a3b8;
+            font-size: 0.73rem;
+        }
+
+    .mcp-live-indicator {
+        margin-left: auto;
+        color: #7055d9 !important;
+        font-size: 0.66rem !important;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        white-space: nowrap;
+    }
+
+    /* ÁREA DE CONSULTAS */
+    .mcp-query-section {
+        padding: 17px;
+        margin-bottom: 22px;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        background: #ffffff;
+    }
+
+        .mcp-query-section .mcp-section-heading {
+            margin-bottom: 13px;
+        }
+
+    .mcp-query-input {
+        display: block;
+        width: 100%;
+        min-height: 105px;
+        resize: vertical;
+        padding: 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        outline: none;
+        background: #f8fafc;
+        color: #334155;
+        font-family: inherit;
+        font-size: 0.84rem;
+        line-height: 1.6;
+        transition: all 0.2s ease;
+    }
+
+        .mcp-query-input::placeholder {
+            color: #a0a9b8;
+        }
+
+        .mcp-query-input:focus {
+            border-color: #8b78e6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(112, 85, 217, 0.1);
+        }
+
+    .mcp-query-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 13px;
+    }
+
+    .mcp-query-hint {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #94a3b8;
+        font-size: 0.7rem;
+    }
+
+    .mcp-hint-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #a78bfa;
+    }
+
+    .mcp-send-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 17px;
+        border: none;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #7055d9, #8b5cf6);
+        color: #ffffff;
+        font-size: 0.79rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .mcp-send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(112, 85, 217, 0.22);
+        }
+
+        .mcp-send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+    .mcp-query-feedback {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 11px 12px;
+        border: 1px solid #ddd6fe;
+        border-radius: 8px;
+        background: #f5f3ff;
+        color: #5b45ad;
+        font-size: 0.76rem;
+        line-height: 1.5;
+    }
+
+    .mcp-feedback-icon {
+        font-weight: 800;
+    }
+
+    /* TARJETAS DE GEMINI Y GROK */
+    .mcp-ai-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .mcp-ai-card {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+        .mcp-ai-card:hover {
+            border-color: #c4b5fd;
+            box-shadow: 0 4px 14px rgba(112, 85, 217, 0.07);
+            transform: translateY(-2px);
+        }
+
+    .mcp-ai-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .mcp-ai-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .gemini-icon {
+        background: #eff6ff;
+        color: #4285f4;
+    }
+
+    .grok-icon {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    .mcp-ai-demo-label {
+        margin-left: auto;
+        padding: 3px 7px;
+        border: 1px solid #ddd6fe;
+        border-radius: 5px;
+        background: #f5f3ff;
+        color: #7055d9 !important;
+        font-size: 0.58rem !important;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+    }
+
+    .mcp-progress {
+        height: 7px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        border-radius: 20px;
+        background: #ede9fe;
+    }
+
+        .mcp-progress div {
+            height: 100%;
+            min-width: 5px;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+
+        .mcp-progress.grok-progress {
+            background: #e2e8f0;
+        }
+
+            .mcp-progress.grok-progress div {
+                background: linear-gradient(90deg, #475569, #94a3b8);
+            }
+
+    .mcp-token-info {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .mcp-token-info span {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        .mcp-token-info strong {
+            color: #475569;
+            font-weight: 700;
+        }
+
+    .mcp-demo-note {
+        margin: 12px 0 0;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.68rem;
+        line-height: 1.5;
+    }
+
+    /* PIE DEL PANEL */
+    .mcp-panel-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 15px;
+        margin-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        color: #94a3b8;
+        font-size: 0.69rem;
+    }
+
+    /* DISEÑO RESPONSIVE */
+    @@media (max-width: 650px) {
+        .mcp-overlay {
+            padding: 12px;
+        }
+
+        .mcp-panel {
+            padding: 18px;
+            max-height: 94vh;
+        }
+
+        .mcp-server-actions {
+            gap: 8px;
+        }
+
+        .mcp-port {
+            margin-left: 0;
+        }
+
+        .mcp-query-footer {
+            align-items: flex-start;
+        }
+    }
+
+    @@media (max-width: 400px) {
+        .mcp-overlay {
+            padding: 7px;
+        }
+
+        .mcp-panel {
+            padding: 15px;
+        }
+
+        .mcp-ai-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .mcp-panel-footer {
+            flex-direction: column;
+        }
+
+        .mcp-section-heading {
+            flex-wrap: wrap;
+        }
+
+        .mcp-live-indicator {
+            margin-left: auto;
+        }
     }
 </style>
 
@@ -573,7 +1312,13 @@
     private bool isInitialLoading = true;
     private bool isGeneratingReport;
 
-    // Estado del modal de crear / editar
+    // Estado del panel MCP
+    private bool showMcpPanel;
+    private string mcpQuery = "";
+    private string? mcpQueryFeedback;
+    private string? mcpServerFeedback;
+
+    // Estado del modal de crear y editar
     private bool showModal;
     private bool isEditing;
     private int currentEditingId;
@@ -582,7 +1327,7 @@
     private string? modalError;
     private bool isSaving;
 
-    // Estado del modal de confirmación de eliminación
+    // Estado del modal de eliminación
     private Person? personToDelete;
     private bool isDeleting;
 
@@ -591,6 +1336,7 @@
         get
         {
             if (peopleList == null) return null;
+
             return activeFilter switch
             {
                 "young" => peopleList.Where(p => p.Age <= 25).ToList(),
@@ -605,9 +1351,9 @@
     {
         ApiService.OnServerChanged += HandleExternalServerChange;
 
-        // Carga datos en paralelo con el temporizador de 1.5 segundos
         var loadTask = LoadPeopleAsync();
         var timerTask = Task.Delay(1500);
+
         await Task.WhenAll(loadTask, timerTask);
 
         isInitialLoading = false;
@@ -630,8 +1376,10 @@
     private async Task HandleToggleServer()
     {
         ApiService.ToggleServer();
+
         alertMessage = $"Servidor conmutado a: {ApiService.CurrentServer}";
         isAlertError = false;
+
         await LoadPeopleAsync();
     }
 
@@ -641,6 +1389,7 @@
         {
             isLoading = true;
             modalError = null;
+
             peopleList = await ApiService.GetPeopleAsync(searchTerm);
         }
         catch (Exception ex)
@@ -716,18 +1465,31 @@
 
             if (isEditing)
             {
-                var dto = new PersonUpdateDto { Name = formName.Trim(), Age = formAge };
+                var dto = new PersonUpdateDto
+                {
+                    Name = formName.Trim(),
+                    Age = formAge
+                };
+
                 await ApiService.UpdateAsync(currentEditingId, dto);
+
                 alertMessage = $"Registro ID {currentEditingId} actualizado con éxito en {ApiService.CurrentServer}.";
             }
             else
             {
-                var dto = new PersonCreateDto { Name = formName.Trim(), Age = formAge };
+                var dto = new PersonCreateDto
+                {
+                    Name = formName.Trim(),
+                    Age = formAge
+                };
+
                 var created = await ApiService.CreateAsync(dto);
+
                 alertMessage = $"Persona '{created.Name}' (ID: {created.Id}) creada exitosamente en {ApiService.CurrentServer}.";
             }
 
             isAlertError = false;
+
             CloseModal();
             await LoadPeopleAsync();
         }
@@ -759,10 +1521,14 @@
         try
         {
             isDeleting = true;
+
             await ApiService.DeleteAsync(personToDelete.Id);
+
             alertMessage = $"Registro '{personToDelete.Name}' (ID: {personToDelete.Id}) eliminado correctamente de {ApiService.CurrentServer}.";
             isAlertError = false;
+
             personToDelete = null;
+
             await LoadPeopleAsync();
         }
         catch (Exception ex)
@@ -781,8 +1547,10 @@
         try
         {
             isGeneratingReport = true;
+
             var pdfBytes = await ApiService.DownloadReportPdfBytesAsync(searchTerm);
             var base64 = Convert.ToBase64String(pdfBytes);
+
             var fileName = $"Reporte_Personas_{ApiService.CurrentServer}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
 
             await JS.InvokeVoidAsync("downloadFileFromBase64", fileName, base64);
@@ -801,9 +1569,38 @@
         }
     }
 
+    // Cierra el panel MCP
+    private void CloseMcpPanel()
+    {
+        showMcpPanel = false;
+    }
+
+    // Informa que el servidor MCP todavía no está integrado
+    private void StartMcpServer()
+    {
+        mcpServerFeedback = "El servidor MCP todavía no está integrado. No se ha iniciado ninguna conexión.";
+    }
+
+    // Muestra un mensaje sin enviar consultas a ninguna IA
+    private void SendMcpQuery()
+    {
+        if (string.IsNullOrWhiteSpace(mcpQuery))
+            return;
+
+        mcpQueryFeedback = "La integración MCP está pendiente. Tu consulta no se ha enviado a ningún servidor ni a Gemini o Grok.";
+    }
+
     private string GetPastelClass(int index)
     {
-        string[] classes = { "card-pastel-purple", "card-pastel-yellow", "card-pastel-green", "card-pastel-blue", "card-pastel-coral" };
+        string[] classes =
+        {
+            "card-pastel-purple",
+            "card-pastel-yellow",
+            "card-pastel-green",
+            "card-pastel-blue",
+            "card-pastel-coral"
+        };
+
         return classes[index % classes.Length];
     }
 

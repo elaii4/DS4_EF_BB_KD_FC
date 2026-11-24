@@ -1,3 +1,4 @@
+using System.Linq;
 using Api.Data;
 using Api.DTOs;
 using Api.Models;
