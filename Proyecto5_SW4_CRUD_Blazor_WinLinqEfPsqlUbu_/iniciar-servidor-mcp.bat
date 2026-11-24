@@ -9,6 +9,9 @@ echo.
 
 cd /d "%~dp0src\Mcp.Server"
 
+echo Cerrando instancias previas si existen...
+taskkill /F /IM Mcp.Server.exe >nul 2>&1
+
 echo Compilando y ejecutando Servidor MCP (.NET 8)...
 echo.
 set ASPNETCORE_URLS=http://0.0.0.0:5145

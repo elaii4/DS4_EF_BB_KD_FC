@@ -9,6 +9,9 @@ echo.
 
 cd /d "%~dp0src\Api"
 
+echo Cerrando instancias previas si existen...
+taskkill /F /IM Api.exe >nul 2>&1
+
 echo Compilando y ejecutando API en Windows...
 echo.
 set ASPNETCORE_ENVIRONMENT=Windows
