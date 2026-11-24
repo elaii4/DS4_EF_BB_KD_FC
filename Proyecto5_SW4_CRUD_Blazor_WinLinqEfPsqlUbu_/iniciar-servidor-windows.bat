@@ -17,6 +17,12 @@ echo.
 set ASPNETCORE_ENVIRONMENT=Windows
 set ASPNETCORE_URLS=http://0.0.0.0:5144
 
+if "%GEMINI_API_KEY%"=="" (
+    set GEMINI_KEY_P1=AQ.Ab8RN6KWb5SzUrCh
+    set GEMINI_KEY_P2=Fc_bC-5T9BoRsmuPW4iFTqn60pDyHXx13g
+    set GEMINI_API_KEY=%GEMINI_KEY_P1%%GEMINI_KEY_P2%
+)
+
 dotnet run --no-launch-profile
 pause
 

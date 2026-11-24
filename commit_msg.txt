@@ -1,1 +1,1 @@
-feat: integracion end-to-end Gemini y MCP con tools seguras y token monitor
+fix: asegurar clave gemini en entorno y fallback transparente
