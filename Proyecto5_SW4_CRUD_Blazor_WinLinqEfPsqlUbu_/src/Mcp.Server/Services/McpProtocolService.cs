@@ -29,13 +29,14 @@ public class McpProtocolService
             new()
             {
                 Name = "sql_list_people",
-                Description = "Consulta la lista de personas desde PostgreSQL (soporta filtrado por nombre y selección de servidor target 'windows' o 'ubuntu').",
+                Description = "Consulta la lista de personas desde PostgreSQL. Permite filtrar por nombre opcionalmente.",
                 InputSchema = JsonDocument.Parse(@"{
                     ""type"": ""object"",
                     ""properties"": {
+                        ""filtroNombre"": { ""type"": ""string"", ""description"": ""Texto opcional para filtrar por nombre de persona"" },
+                        ""search"": { ""type"": ""string"", ""description"": ""Alias opcional de filtroNombre para buscar coincidencias"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" },
-                        ""search"": { ""type"": ""string"", ""description"": ""Texto opcional para filtrar por nombre"" },
-                        ""limit"": { ""type"": ""integer"", ""description"": ""Límite máximo de resultados (por defecto 100)"", ""default"": 100 }
+                        ""limit"": { ""type"": ""integer"", ""description"": ""Límite máximo de registros a retornar (por defecto 100)"", ""default"": 100 }
                     }
                 }").RootElement
             },
@@ -47,7 +48,7 @@ public class McpProtocolService
                     ""type"": ""object"",
                     ""required"": [""id""],
                     ""properties"": {
-                        ""id"": { ""type"": ""integer"", ""description"": ""ID único de la persona"" },
+                        ""id"": { ""type"": ""integer"", ""description"": ""ID único de la persona (> 0)"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" }
                     }
                 }").RootElement
@@ -55,13 +56,15 @@ public class McpProtocolService
             new()
             {
                 Name = "sql_create_person",
-                Description = "Registra una nueva persona en la base de datos PostgreSQL.",
+                Description = "Crea una nueva persona en la base de datos PostgreSQL y devuelve el registro creado con su ID.",
                 InputSchema = JsonDocument.Parse(@"{
                     ""type"": ""object"",
-                    ""required"": [""name"", ""age""],
+                    ""required"": [""nombre"", ""edad""],
                     ""properties"": {
-                        ""name"": { ""type"": ""string"", ""description"": ""Nombre completo de la persona"" },
-                        ""age"": { ""type"": ""integer"", ""description"": ""Edad de la persona (0 a 120)"" },
+                        ""nombre"": { ""type"": ""string"", ""description"": ""Nombre completo de la persona (obligatorio, no vacío)"" },
+                        ""edad"": { ""type"": ""integer"", ""description"": ""Edad de la persona (entero entre 1 y 120)"" },
+                        ""name"": { ""type"": ""string"", ""description"": ""Alias de nombre"" },
+                        ""age"": { ""type"": ""integer"", ""description"": ""Alias de edad"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" }
                     }
                 }").RootElement
@@ -69,14 +72,16 @@ public class McpProtocolService
             new()
             {
                 Name = "sql_update_person",
-                Description = "Actualiza los datos (nombre y/o edad) de una persona existente en PostgreSQL.",
+                Description = "Actualiza los datos (nombre y/o edad) de una persona por su ID en PostgreSQL y devuelve el registro actualizado.",
                 InputSchema = JsonDocument.Parse(@"{
                     ""type"": ""object"",
-                    ""required"": [""id"", ""name"", ""age""],
+                    ""required"": [""id"", ""nombre"", ""edad""],
                     ""properties"": {
-                        ""id"": { ""type"": ""integer"", ""description"": ""ID de la persona a modificar"" },
-                        ""name"": { ""type"": ""string"", ""description"": ""Nuevo nombre completo"" },
-                        ""age"": { ""type"": ""integer"", ""description"": ""Nueva edad"" },
+                        ""id"": { ""type"": ""integer"", ""description"": ""ID único de la persona a modificar (> 0)"" },
+                        ""nombre"": { ""type"": ""string"", ""description"": ""Nuevo nombre completo (no vacío)"" },
+                        ""edad"": { ""type"": ""integer"", ""description"": ""Nueva edad (entero entre 1 y 120)"" },
+                        ""name"": { ""type"": ""string"", ""description"": ""Alias de nombre"" },
+                        ""age"": { ""type"": ""integer"", ""description"": ""Alias de edad"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" }
                     }
                 }").RootElement
@@ -84,12 +89,12 @@ public class McpProtocolService
             new()
             {
                 Name = "sql_delete_person",
-                Description = "Elimina de forma permanente una persona por su ID de la base de datos.",
+                Description = "Elimina de forma permanente una persona por su ID y devuelve confirmación con las filas afectadas.",
                 InputSchema = JsonDocument.Parse(@"{
                     ""type"": ""object"",
                     ""required"": [""id""],
                     ""properties"": {
-                        ""id"": { ""type"": ""integer"", ""description"": ""ID de la persona a eliminar"" },
+                        ""id"": { ""type"": ""integer"", ""description"": ""ID único de la persona a eliminar (> 0)"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" }
                     }
                 }").RootElement
@@ -108,12 +113,12 @@ public class McpProtocolService
             new()
             {
                 Name = "sql_execute_query",
-                Description = "Ejecuta consultas SQL en PostgreSQL bajo estricta política de permisos (solo SELECT y comandos seguros, prohíbe DROP/TRUNCATE).",
+                Description = "Ejecuta consultas de solo lectura (SELECT) en PostgreSQL. Prohíbe terminantemente DROP, TRUNCATE, ALTER, INSERT, UPDATE y DELETE.",
                 InputSchema = JsonDocument.Parse(@"{
                     ""type"": ""object"",
                     ""required"": [""sql""],
                     ""properties"": {
-                        ""sql"": { ""type"": ""string"", ""description"": ""Sentencia SQL a ejecutar"" },
+                        ""sql"": { ""type"": ""string"", ""description"": ""Sentencia SQL de solo lectura (debe iniciar con SELECT)"" },
                         ""target"": { ""type"": ""string"", ""description"": ""Servidor destino ('windows' o 'ubuntu')"", ""default"": ""windows"" }
                     }
                 }").RootElement
@@ -205,8 +210,10 @@ public class McpProtocolService
                     int limit = 100;
                     if (args.ValueKind == JsonValueKind.Object)
                     {
-                        if (args.TryGetProperty("search", out var sp)) search = sp.GetString();
-                        if (args.TryGetProperty("limit", out var lp)) limit = lp.GetInt32();
+                        if (args.TryGetProperty("filtroNombre", out var fp) && fp.ValueKind == JsonValueKind.String) search = fp.GetString();
+                        else if (args.TryGetProperty("search", out var sp) && sp.ValueKind == JsonValueKind.String) search = sp.GetString();
+
+                        if (args.TryGetProperty("limit", out var lp) && lp.ValueKind == JsonValueKind.Number) limit = lp.GetInt32();
                     }
                     var list = await _db.ListPeopleAsync(target, search, limit, ct);
                     return ToolSuccess(JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true }));
@@ -214,53 +221,95 @@ public class McpProtocolService
 
                 case "sql_get_person":
                 {
-                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("id", out var idProp))
+                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("id", out var idProp) || idProp.ValueKind != JsonValueKind.Number)
                     {
-                        return ToolError("Argumento 'id' requerido.");
+                        return ToolError("El parámetro 'id' es requerido y debe ser numérico.");
                     }
-                    var p = await _db.GetPersonByIdAsync(target, idProp.GetInt32(), ct);
+                    var id = idProp.GetInt32();
+                    if (id <= 0) return ToolError("El ID debe ser mayor a 0.");
+
+                    var p = await _db.GetPersonByIdAsync(target, id, ct);
                     return p != null 
                         ? ToolSuccess(JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true }))
-                        : ToolError($"Persona con ID {idProp.GetInt32()} no encontrada.");
+                        : ToolError($"Persona con ID {id} no encontrada.");
                 }
 
                 case "sql_create_person":
                 {
-                    if (args.ValueKind != JsonValueKind.Object ||
-                        !args.TryGetProperty("name", out var np) ||
-                        !args.TryGetProperty("age", out var ap))
+                    string? nombre = null;
+                    int? edad = null;
+
+                    if (args.ValueKind == JsonValueKind.Object)
                     {
-                        return ToolError("Argumentos 'name' y 'age' requeridos.");
+                        if (args.TryGetProperty("nombre", out var np) && np.ValueKind == JsonValueKind.String) nombre = np.GetString();
+                        else if (args.TryGetProperty("name", out var nnamep) && nnamep.ValueKind == JsonValueKind.String) nombre = nnamep.GetString();
+
+                        if (args.TryGetProperty("edad", out var ep) && ep.ValueKind == JsonValueKind.Number) edad = ep.GetInt32();
+                        else if (args.TryGetProperty("age", out var eagep) && eagep.ValueKind == JsonValueKind.Number) edad = eagep.GetInt32();
                     }
-                    var created = await _db.CreatePersonAsync(target, np.GetString() ?? "", ap.GetInt32(), ct);
+
+                    if (string.IsNullOrWhiteSpace(nombre))
+                    {
+                        return ToolError("El parámetro 'nombre' es obligatorio y no puede estar vacío.");
+                    }
+                    if (!edad.HasValue || edad.Value < 1 || edad.Value > 120)
+                    {
+                        return ToolError("El parámetro 'edad' debe ser un número entero entre 1 y 120.");
+                    }
+
+                    var created = await _db.CreatePersonAsync(target, nombre, edad.Value, ct);
                     return ToolSuccess(JsonSerializer.Serialize(created, new JsonSerializerOptions { WriteIndented = true }));
                 }
 
                 case "sql_update_person":
                 {
-                    if (args.ValueKind != JsonValueKind.Object ||
-                        !args.TryGetProperty("id", out var idProp) ||
-                        !args.TryGetProperty("name", out var np) ||
-                        !args.TryGetProperty("age", out var ap))
+                    int? id = null;
+                    string? nombre = null;
+                    int? edad = null;
+
+                    if (args.ValueKind == JsonValueKind.Object)
                     {
-                        return ToolError("Argumentos 'id', 'name' y 'age' requeridos.");
+                        if (args.TryGetProperty("id", out var ip) && ip.ValueKind == JsonValueKind.Number) id = ip.GetInt32();
+                        
+                        if (args.TryGetProperty("nombre", out var np) && np.ValueKind == JsonValueKind.String) nombre = np.GetString();
+                        else if (args.TryGetProperty("name", out var nnamep) && nnamep.ValueKind == JsonValueKind.String) nombre = nnamep.GetString();
+
+                        if (args.TryGetProperty("edad", out var ep) && ep.ValueKind == JsonValueKind.Number) edad = ep.GetInt32();
+                        else if (args.TryGetProperty("age", out var eagep) && eagep.ValueKind == JsonValueKind.Number) edad = eagep.GetInt32();
                     }
-                    var ok = await _db.UpdatePersonAsync(target, idProp.GetInt32(), np.GetString() ?? "", ap.GetInt32(), ct);
-                    return ok 
-                        ? ToolSuccess($"Persona ID {idProp.GetInt32()} actualizada exitosamente.")
-                        : ToolError($"No se encontró la persona ID {idProp.GetInt32()} para actualizar.");
+
+                    if (!id.HasValue || id.Value <= 0)
+                    {
+                        return ToolError("El parámetro 'id' es obligatorio y debe ser mayor a 0.");
+                    }
+                    if (string.IsNullOrWhiteSpace(nombre))
+                    {
+                        return ToolError("El parámetro 'nombre' es obligatorio y no puede estar vacío.");
+                    }
+                    if (!edad.HasValue || edad.Value < 1 || edad.Value > 120)
+                    {
+                        return ToolError("El parámetro 'edad' debe ser un número entero entre 1 y 120.");
+                    }
+
+                    var updated = await _db.UpdatePersonAsync(target, id.Value, nombre, edad.Value, ct);
+                    return updated != null 
+                        ? ToolSuccess(JsonSerializer.Serialize(updated, new JsonSerializerOptions { WriteIndented = true }))
+                        : ToolError($"No se encontró la persona con ID {id.Value} para actualizar.");
                 }
 
                 case "sql_delete_person":
                 {
-                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("id", out var idProp))
+                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("id", out var idProp) || idProp.ValueKind != JsonValueKind.Number)
                     {
-                        return ToolError("Argumento 'id' requerido.");
+                        return ToolError("El parámetro 'id' es requerido y debe ser numérico.");
                     }
-                    var ok = await _db.DeletePersonAsync(target, idProp.GetInt32(), ct);
-                    return ok 
-                        ? ToolSuccess($"Persona ID {idProp.GetInt32()} eliminada exitosamente.")
-                        : ToolError($"No se encontró la persona ID {idProp.GetInt32()} para eliminar.");
+                    var id = idProp.GetInt32();
+                    if (id <= 0) return ToolError("El ID debe ser mayor a 0.");
+
+                    var rows = await _db.DeletePersonAsync(target, id, ct);
+                    return rows > 0 
+                        ? ToolSuccess(JsonSerializer.Serialize(new { success = true, id = id, rowsAffected = rows, message = $"Persona con ID {id} eliminada exitosamente. Filas afectadas: {rows}." }, new JsonSerializerOptions { WriteIndented = true }))
+                        : ToolError($"No se encontró la persona con ID {id} para eliminar. Filas afectadas: 0.");
                 }
 
                 case "sql_get_stats":
@@ -271,9 +320,9 @@ public class McpProtocolService
 
                 case "sql_execute_query":
                 {
-                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("sql", out var sqlProp))
+                    if (args.ValueKind != JsonValueKind.Object || !args.TryGetProperty("sql", out var sqlProp) || sqlProp.ValueKind != JsonValueKind.String)
                     {
-                        return ToolError("Argumento 'sql' requerido.");
+                        return ToolError("El parámetro 'sql' es requerido.");
                     }
                     var queryOutput = await _db.ExecuteQueryAsync(target, sqlProp.GetString() ?? "", ct);
                     return ToolSuccess(queryOutput);

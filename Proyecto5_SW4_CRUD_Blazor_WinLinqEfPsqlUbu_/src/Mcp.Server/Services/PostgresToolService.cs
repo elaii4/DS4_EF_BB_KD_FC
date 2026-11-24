@@ -109,6 +109,15 @@ public class PostgresToolService : IPostgresToolService
 
     public async Task<McpPersonDto> CreatePersonAsync(string target, string name, int age, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("El nombre es obligatorio y no puede estar vacío.", nameof(name));
+        }
+        if (age < 1 || age > 120)
+        {
+            throw new ArgumentOutOfRangeException(nameof(age), "La edad debe estar comprendida entre 1 y 120 años.");
+        }
+
         var connStr = GetConnectionString(target);
         await using var conn = new NpgsqlConnection(connStr);
         await conn.OpenAsync(ct);
@@ -132,24 +141,52 @@ public class PostgresToolService : IPostgresToolService
         throw new InvalidOperationException("No se pudo obtener el registro recién creado.");
     }
 
-    public async Task<bool> UpdatePersonAsync(string target, int id, string name, int age, CancellationToken ct = default)
+    public async Task<McpPersonDto?> UpdatePersonAsync(string target, int id, string name, int age, CancellationToken ct = default)
     {
+        if (id <= 0)
+        {
+            throw new ArgumentException("El ID debe ser un número entero positivo mayor a 0.", nameof(id));
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("El nombre es obligatorio y no puede estar vacío.", nameof(name));
+        }
+        if (age < 1 || age > 120)
+        {
+            throw new ArgumentOutOfRangeException(nameof(age), "La edad debe estar comprendida entre 1 y 120 años.");
+        }
+
         var connStr = GetConnectionString(target);
         await using var conn = new NpgsqlConnection(connStr);
         await conn.OpenAsync(ct);
 
-        const string sql = "UPDATE people SET name = @name, age = @age WHERE id = @id";
+        const string sql = "UPDATE people SET name = @name, age = @age WHERE id = @id RETURNING id, name, age";
         await using var cmd = new NpgsqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("@id", id);
         cmd.Parameters.AddWithValue("@name", name.Trim());
         cmd.Parameters.AddWithValue("@age", age);
 
-        var rows = await cmd.ExecuteNonQueryAsync(ct);
-        return rows > 0;
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        if (await reader.ReadAsync(ct))
+        {
+            return new McpPersonDto
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1),
+                Age = reader.GetInt32(2)
+            };
+        }
+
+        return null;
     }
 
-    public async Task<bool> DeletePersonAsync(string target, int id, CancellationToken ct = default)
+    public async Task<int> DeletePersonAsync(string target, int id, CancellationToken ct = default)
     {
+        if (id <= 0)
+        {
+            throw new ArgumentException("El ID debe ser un número entero positivo mayor a 0.", nameof(id));
+        }
+
         var connStr = GetConnectionString(target);
         await using var conn = new NpgsqlConnection(connStr);
         await conn.OpenAsync(ct);
@@ -159,7 +196,7 @@ public class PostgresToolService : IPostgresToolService
         cmd.Parameters.AddWithValue("@id", id);
 
         var rows = await cmd.ExecuteNonQueryAsync(ct);
-        return rows > 0;
+        return rows;
     }
 
     public async Task<McpDatabaseStatsDto> GetDatabaseStatsAsync(string target, CancellationToken ct = default)
@@ -199,14 +236,27 @@ public class PostgresToolService : IPostgresToolService
 
     public async Task<string> ExecuteQueryAsync(string target, string sqlQuery, CancellationToken ct = default)
     {
-        // 1. Control de Permisos de Seguridad
-        var upper = sqlQuery.ToUpperInvariant();
-        foreach (var danger in DangerousSqlTokens)
+        if (string.IsNullOrWhiteSpace(sqlQuery))
         {
-            if (upper.Contains(danger))
+            throw new ArgumentException("La consulta SQL no puede estar vacía.", nameof(sqlQuery));
+        }
+
+        // 1. Control de Permisos de Seguridad: Estrictamente solo lectura (SELECT)
+        var trimmed = sqlQuery.Trim();
+        if (!trimmed.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Intento de consulta no autorizada en sql_execute_query: {Sql}", sqlQuery);
+            throw new UnauthorizedAccessException("Permiso denegado por política de seguridad MCP: 'sql_execute_query' está estrictamente limitado a consultas de solo lectura (SELECT). Para crear, modificar o eliminar registros utilice las herramientas especializadas correspondientes (sql_create_person, sql_update_person, sql_delete_person).");
+        }
+
+        var upper = sqlQuery.ToUpperInvariant();
+        string[] forbiddenTokens = { "DROP", "TRUNCATE", "ALTER", "GRANT", "REVOKE", "CREATE", "INSERT", "UPDATE", "DELETE" };
+        foreach (var token in forbiddenTokens)
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(upper, $@"\b{token}\b"))
             {
-                _logger.LogWarning("Intento de ejecución de comando no autorizado en MCP: {Sql}", sqlQuery);
-                throw new UnauthorizedAccessException($"Permiso denegado por política de seguridad MCP: El comando contiene '{danger}'. Solo se permiten consultas de lectura y manipulación segura.");
+                _logger.LogWarning("Comando peligroso/modificador '{Token}' detectado en consulta libre: {Sql}", token, sqlQuery);
+                throw new UnauthorizedAccessException($"Permiso denegado por política de seguridad MCP: El comando contiene '{token}', el cual está prohibido en consultas libres de solo lectura.");
             }
         }
 
@@ -215,28 +265,19 @@ public class PostgresToolService : IPostgresToolService
         await conn.OpenAsync(ct);
 
         await using var cmd = new NpgsqlCommand(sqlQuery, conn);
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        var results = new List<Dictionary<string, object?>>();
 
-        if (upper.TrimStart().StartsWith("SELECT"))
+        while (await reader.ReadAsync(ct))
         {
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
-            var results = new List<Dictionary<string, object?>>();
-
-            while (await reader.ReadAsync(ct))
+            var row = new Dictionary<string, object?>();
+            for (int i = 0; i < reader.FieldCount; i++)
             {
-                var row = new Dictionary<string, object?>();
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                }
-                results.Add(row);
+                row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
             }
+            results.Add(row);
+        }
 
-            return JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
-        }
-        else
-        {
-            var affected = await cmd.ExecuteNonQueryAsync(ct);
-            return JsonSerializer.Serialize(new { rowsAffected = affected, success = true });
-        }
+        return JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
     }
 }

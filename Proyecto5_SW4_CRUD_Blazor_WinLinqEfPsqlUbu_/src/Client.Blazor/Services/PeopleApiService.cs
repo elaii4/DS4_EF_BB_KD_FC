@@ -226,4 +226,59 @@ public class PeopleApiService
             throw new Exception($"Error al generar el reporte en {CurrentServer}: {ex.Message}", ex);
         }
     }
+
+    public async Task<McpQueryResponseDto> SendMcpQueryAsync(string prompt, string provider = "gemini")
+    {
+        var endpoint = $"{CurrentBaseUrl}api/mcp/query";
+        var payload = new McpQueryRequestDto
+        {
+            Prompt = prompt,
+            Provider = provider,
+            Target = CurrentServer == ServerTarget.Windows ? "windows" : "ubuntu"
+        };
+
+        try
+        {
+            var response = await _http.PostAsJsonAsync(endpoint, payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                return new McpQueryResponseDto
+                {
+                    IsSuccess = false,
+                    Reply = $"Error al enviar consulta a {CurrentServer} ({response.StatusCode}): {errorBody}",
+                    ErrorMessage = errorBody
+                };
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<McpQueryResponseDto>();
+            return result ?? new McpQueryResponseDto
+            {
+                IsSuccess = false,
+                Reply = "Respuesta vacía recibida del servidor."
+            };
+        }
+        catch (Exception ex)
+        {
+            return new McpQueryResponseDto
+            {
+                IsSuccess = false,
+                Reply = $"Error de conexión con el servidor activo ({CurrentServer}): {ex.Message}",
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    public async Task<AiUsageStatusDto?> GetMcpUsageAsync(string provider = "gemini")
+    {
+        var endpoint = $"{CurrentBaseUrl}api/mcp/usage?provider={provider}";
+        try
+        {
+            return await _http.GetFromJsonAsync<AiUsageStatusDto>(endpoint);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

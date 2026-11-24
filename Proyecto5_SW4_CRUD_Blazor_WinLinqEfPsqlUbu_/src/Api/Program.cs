@@ -2,6 +2,8 @@
 // Punto de entrada y configuración de la API REST ASP.NET Core 8.
 // Registra servicios, DbContext en PostgreSQL, Swagger y canal de middleware.
 using Api.Data;
+using Api.Services;
+using Mcp.Client.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args); // Inicializa el constructor de la aplicación web
@@ -22,6 +24,16 @@ builder.Services.AddDbContext<AppDbContext>(options => // Configura el contexto 
 {
     options.UseNpgsql(connectionString);
 });
+
+// Registrar Cliente MCP (Capa 3) para comunicar con Mcp.Server (Capa 4)
+builder.Services.AddMcpClient(options =>
+{
+    options.ServerUrl = builder.Configuration["McpClient:ServerUrl"] ?? "http://localhost:5145/";
+});
+
+// Registrar Tracker de consumo de tokens (Singleton) y Orquestador de Gemini + MCP
+builder.Services.AddSingleton<AiUsageTrackerService>();
+builder.Services.AddHttpClient<McpAiOrchestratorService>();
 
 builder.Services.AddControllers();
 

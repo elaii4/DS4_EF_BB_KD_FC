@@ -128,6 +128,7 @@ public class McpHttpClient : IMcpClient
         };
         if (!string.IsNullOrWhiteSpace(search))
         {
+            args["filtroNombre"] = search;
             args["search"] = search;
         }
 
@@ -149,7 +150,9 @@ public class McpHttpClient : IMcpClient
     {
         var args = new Dictionary<string, object?>
         {
+            ["nombre"] = name,
             ["name"] = name,
+            ["edad"] = age,
             ["age"] = age,
             ["target"] = target
         };
@@ -173,7 +176,9 @@ public class McpHttpClient : IMcpClient
         var args = new Dictionary<string, object?>
         {
             ["id"] = id,
+            ["nombre"] = name,
             ["name"] = name,
+            ["edad"] = age,
             ["age"] = age,
             ["target"] = target
         };

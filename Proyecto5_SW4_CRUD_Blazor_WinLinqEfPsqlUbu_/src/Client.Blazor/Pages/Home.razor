@@ -24,7 +24,7 @@
         <div class="d-flex align-items-center gap-3 ms-auto">
 
             <button type="button" class="btn-mcp-toggle shadow-sm"
-                    @onclick="() => showMcpPanel = true"
+                    @onclick="OpenMcpPanelAsync"
                     title="Abrir centro de control MCP">
                 <span class="mcp-button-icon">✦</span>
                 <span>MCP</span>
@@ -429,24 +429,18 @@
 
                     <button class="mcp-start-btn"
                             @onclick="StartMcpServer"
-                            title="El servidor MCP aún no está integrado">
-                        <span>▶</span> Iniciar
-                    </button>
-
-                    <button class="mcp-stop-btn"
-                            disabled
-                            title="No existe un servidor MCP activo">
-                        <span>■</span> Detener
+                            title="Verificar y conectar al servidor MCP">
+                        <span>▶</span> Comprobar
                     </button>
 
                     <div class="mcp-status">
-                        <span class="mcp-status-dot disconnected"></span>
-                        <span>Sin conexión</span>
+                        <span class="mcp-status-dot @(geminiUsage?.McpServerOnline == true ? "connected" : "disconnected")"></span>
+                        <span>@(geminiUsage?.McpServerOnline == true ? "Servidor Activo" : "Sin conexión")</span>
                     </div>
 
                     <div class="mcp-port">
                         <span>Puerto</span>
-                        <strong>8080</strong>
+                        <strong>5145</strong>
                     </div>
 
                 </div>
@@ -472,26 +466,79 @@
 
                 <textarea class="mcp-query-input"
                           @bind="mcpQuery"
-                          placeholder="Escribe tu consulta aquí...&#10;&#10;Ejemplo: Obtén la lista de personas registradas."
+                          placeholder="@("Escribe tu consulta aquí...\n\nEjemplo: Registra a Carlos Gómez con 29 años o consulta las personas registradas.")"
                           rows="4"></textarea>
 
                 <div class="mcp-query-footer">
                     <span class="mcp-query-hint">
-                        <span class="mcp-hint-dot"></span>
-                        Servidor pendiente de integración.
+                        @if (isMcpProcessing)
+                        {
+                            <span class="mcp-hint-dot" style="background-color: #f59e0b;"></span>
+                            <span>Procesando consulta con Gemini...</span>
+                        }
+                        else if (geminiUsage?.McpServerOnline == true)
+                        {
+                            <span class="mcp-hint-dot" style="background-color: #10b981;"></span>
+                            <span>Conectado a Gemini + Servidor MCP (@ApiService.CurrentServer)</span>
+                        }
+                        else
+                        {
+                            <span class="mcp-hint-dot" style="background-color: #ef4444;"></span>
+                            <span>Servidor MCP desconectado o no disponible en @ApiService.CurrentServer</span>
+                        }
                     </span>
 
                     <button class="mcp-send-btn"
                             @onclick="SendMcpQuery"
-                            disabled="@string.IsNullOrWhiteSpace(mcpQuery)">
-                        <span>Enviar consulta</span>
-                        <span>➤</span>
+                            disabled="@(isMcpProcessing || string.IsNullOrWhiteSpace(mcpQuery))">
+                        @if (isMcpProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span>Consultando...</span>
+                        }
+                        else
+                        {
+                            <span>Enviar consulta</span>
+                            <span>➤</span>
+                        }
                     </button>
                 </div>
 
-                @if (!string.IsNullOrEmpty(mcpQueryFeedback))
+                @if (lastQueryResponse != null && lastQueryResponse.ToolsExecuted != null && lastQueryResponse.ToolsExecuted.Count > 0)
                 {
-                    <div class="mcp-query-feedback">
+                    <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                        <span class="small fw-semibold text-muted">Herramientas MCP:</span>
+                        @foreach (var tool in lastQueryResponse.ToolsExecuted)
+                        {
+                            <span class="badge rounded-pill bg-dark text-white px-2 py-1 shadow-xs" style="font-size: 0.72rem;">
+                                🛠 @tool
+                            </span>
+                        }
+                        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1" style="font-size: 0.72rem;">
+                            ⚡ @lastQueryResponse.TokensUsed tokens
+                        </span>
+                        @if (lastQueryResponse.DatabaseModified)
+                        {
+                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.72rem;">
+                                ✓ BD Actualizada
+                            </span>
+                        }
+                    </div>
+                }
+
+                @if (lastQueryResponse != null && !string.IsNullOrWhiteSpace(lastQueryResponse.Reply))
+                {
+                    <div class="mcp-query-feedback mt-3" style="background: rgba(241, 245, 249, 0.95); border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; font-size: 0.88rem; color: #1e293b; white-space: pre-wrap; line-height: 1.5;">
+                        <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <span class="mcp-ai-icon gemini-icon" style="font-size: 1rem;">✦</span>
+                            <strong class="text-dark">Respuesta de Gemini (@(lastQueryResponse.Model)):</strong>
+                        </div>
+                        @lastQueryResponse.Reply
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(mcpQueryFeedback))
+                {
+                    <div class="mcp-query-feedback mt-3">
                         <span class="mcp-feedback-icon">ⓘ</span>
                         @mcpQueryFeedback
                     </div>
@@ -506,7 +553,7 @@
                         <h5>Monitor de IAs</h5>
                         <span>Consumo de tokens por plataforma</span>
                     </div>
-                    <span class="mcp-live-indicator">● DEMO</span>
+                    <span class="mcp-live-indicator" style="color: #10b981; font-weight: 700;">● EN VIVO</span>
                 </div>
 
                 <div class="mcp-ai-grid">
@@ -515,43 +562,42 @@
                     <div class="mcp-ai-card">
                         <div class="mcp-ai-name">
                             <span class="mcp-ai-icon gemini-icon">✦</span>
-                            <span>Gemini</span>
-                            <span class="mcp-ai-demo-label">DEMO</span>
+                            <span>Google Gemini</span>
+                            <span class="badge @(geminiUsage?.IsConfigured == true ? "bg-success" : "bg-warning") text-white px-2 py-0" style="font-size: 0.68rem;">
+                                @(geminiUsage?.IsConfigured == true ? "ACTIVO" : "SIN CLAVE")
+                            </span>
                         </div>
 
                         <div class="mcp-progress">
-                            <div style="width: 8.2%"></div>
+                            <div style="width: @(Math.Clamp(geminiUsage?.UsagePercentage ?? 0, 0, 100))%;"></div>
                         </div>
 
                         <div class="mcp-token-info">
-                            <span>Usados: <strong>8,200</strong></span>
-                            <span>Disponibles: <strong>91,800</strong></span>
+                            <span>Usados: <strong>@(geminiUsage?.UsedTokens.ToString("N0") ?? "0")</strong></span>
+                            <span>Disponibles: <strong>@(geminiUsage?.AvailableTokens.ToString("N0") ?? "100,000")</strong></span>
                         </div>
                     </div>
 
-                    <!-- GROK -->
+                    <!-- ESTADO DEL SERVIDOR MCP -->
                     <div class="mcp-ai-card">
                         <div class="mcp-ai-name">
-                            <span class="mcp-ai-icon grok-icon">✕</span>
-                            <span>Grok</span>
-                            <span class="mcp-ai-demo-label">DEMO</span>
+                            <span class="mcp-ai-icon" style="color: #3b82f6;">⚙</span>
+                            <span>Servidor MCP (Capa 4)</span>
+                            <span class="badge @(geminiUsage?.McpServerOnline == true ? "bg-success" : "bg-danger") text-white px-2 py-0" style="font-size: 0.68rem;">
+                                @(geminiUsage?.McpServerOnline == true ? "ONLINE" : "OFFLINE")
+                            </span>
                         </div>
 
-                        <div class="mcp-progress grok-progress">
-                            <div style="width: 4.1%"></div>
+                        <div class="mcp-progress">
+                            <div style="width: @(geminiUsage?.McpServerOnline == true ? "100%" : "0%"); background-color: @(geminiUsage?.McpServerOnline == true ? "#10b981" : "#ef4444");"></div>
                         </div>
 
                         <div class="mcp-token-info">
-                            <span>Usados: <strong>4,100</strong></span>
-                            <span>Disponibles: <strong>95,900</strong></span>
+                            <span>Puerto: <strong>5145</strong></span>
+                            <span>Protocolo: <strong>JSON-RPC 2.0</strong></span>
                         </div>
                     </div>
                 </div>
-
-                <p class="mcp-demo-note">
-                    Datos de demostración. Gemini y Grok se muestran únicamente como referencia visual.
-                    No están conectados, no reciben consultas y no consumen tokens reales.
-                </p>
             </div>
 
             <!-- PIE DEL PANEL -->
@@ -1317,6 +1363,9 @@
     private string mcpQuery = "";
     private string? mcpQueryFeedback;
     private string? mcpServerFeedback;
+    private bool isMcpProcessing;
+    private McpQueryResponseDto? lastQueryResponse;
+    private AiUsageStatusDto? geminiUsage;
 
     // Estado del modal de crear y editar
     private bool showModal;
@@ -1569,25 +1618,84 @@
         }
     }
 
+    // Abre el panel MCP y refresca métricas
+    private async Task OpenMcpPanelAsync()
+    {
+        showMcpPanel = true;
+        await RefreshMcpUsageAsync();
+    }
+
+    private async Task RefreshMcpUsageAsync()
+    {
+        try
+        {
+            geminiUsage = await ApiService.GetMcpUsageAsync("gemini");
+        }
+        catch
+        {
+            // Omitir si el servidor activo aún no responde
+        }
+    }
+
     // Cierra el panel MCP
     private void CloseMcpPanel()
     {
         showMcpPanel = false;
     }
 
-    // Informa que el servidor MCP todavía no está integrado
-    private void StartMcpServer()
+    // Comprueba el estado del servidor MCP
+    private async Task StartMcpServer()
     {
-        mcpServerFeedback = "El servidor MCP todavía no está integrado. No se ha iniciado ninguna conexión.";
+        mcpServerFeedback = "Verificando conexión con el Servidor MCP en http://localhost:5145/health...";
+        await RefreshMcpUsageAsync();
+        if (geminiUsage?.McpServerOnline == true)
+        {
+            mcpServerFeedback = "¡Servidor MCP (Capa 4) activo y listo! Escuchando en el puerto 5145 con protocolo JSON-RPC 2.0.";
+        }
+        else
+        {
+            mcpServerFeedback = "El servidor MCP (Capa 4) no responde en el puerto 5145. Ejecuta 'iniciar-servidor-mcp.bat' en Windows.";
+        }
     }
 
-    // Muestra un mensaje sin enviar consultas a ninguna IA
-    private void SendMcpQuery()
+    // Envía la consulta a Gemini + MCP Server
+    private async Task SendMcpQuery()
     {
-        if (string.IsNullOrWhiteSpace(mcpQuery))
+        if (string.IsNullOrWhiteSpace(mcpQuery) || isMcpProcessing)
             return;
 
-        mcpQueryFeedback = "La integración MCP está pendiente. Tu consulta no se ha enviado a ningún servidor ni a Gemini o Grok.";
+        try
+        {
+            isMcpProcessing = true;
+            mcpQueryFeedback = null;
+            lastQueryResponse = null;
+
+            var result = await ApiService.SendMcpQueryAsync(mcpQuery, "gemini");
+            lastQueryResponse = result;
+
+            if (!result.IsSuccess)
+            {
+                mcpQueryFeedback = result.Reply;
+            }
+            else
+            {
+                if (result.DatabaseModified)
+                {
+                    await LoadPeopleAsync();
+                }
+            }
+
+            // Actualizar monitor de uso de tokens
+            await RefreshMcpUsageAsync();
+        }
+        catch (Exception ex)
+        {
+            mcpQueryFeedback = $"Error inesperado al procesar la consulta: {ex.Message}";
+        }
+        finally
+        {
+            isMcpProcessing = false;
+        }
     }
 
     private string GetPastelClass(int index)
