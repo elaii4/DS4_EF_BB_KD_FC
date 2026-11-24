@@ -26,7 +26,6 @@
             <button type="button" class="btn-mcp-toggle shadow-sm"
                     @onclick="OpenMcpPanelAsync"
                     title="Abrir centro de control MCP">
-                <span class="mcp-button-icon">✦</span>
                 <span>MCP</span>
             </button>
 
@@ -97,7 +96,7 @@
             </button>
 
             <button class="btn-modern-black" @onclick="OpenCreateModal">
-                <span>+ Agregar Persona</span>
+                <span>Agregar Persona</span>
             </button>
         </div>
     </div>
@@ -118,13 +117,13 @@
                 Todos (@(peopleList?.Count ?? 0))
             </button>
             <button class="btn-pill-tag @(activeFilter == "young" ? "active" : "")" @onclick='() => SetFilter("young")'>
-                Jóvenes (25)
+                Jóvenes
             </button>
             <button class="btn-pill-tag @(activeFilter == "adult" ? "active" : "")" @onclick='() => SetFilter("adult")'>
-                Adultos (25)
+                Adultos
             </button>
             <button class="btn-pill-tag @(activeFilter == "senior" ? "active" : "")" @onclick='() => SetFilter("senior")'>
-                Senior (50)
+                Senior
             </button>
         </div>
 
@@ -418,7 +417,6 @@
             <!-- CONTROL DEL SERVIDOR -->
             <div class="mcp-server-box">
                 <div class="mcp-server-title">
-                    <div class="mcp-server-title-icon">⌘</div>
                     <div>
                         <h5>Control del servidor</h5>
                         <span>Administración del estado del servicio MCP</span>
@@ -430,7 +428,7 @@
                     <button class="mcp-start-btn"
                             @onclick="StartMcpServer"
                             title="Verificar y conectar al servidor MCP">
-                        <span>▶</span> Comprobar
+                        Comprobar
                     </button>
 
                     <div class="mcp-status">
@@ -438,17 +436,11 @@
                         <span>@(usageSummary?.McpServerOnline == true ? "Servidor Activo" : "Sin conexión")</span>
                     </div>
 
-                    <div class="mcp-port">
-                        <span>Puerto</span>
-                        <strong>5145</strong>
-                    </div>
-
                 </div>
 
                 @if (!string.IsNullOrEmpty(mcpServerFeedback))
                 {
                     <div class="mcp-query-feedback">
-                        <span class="mcp-feedback-icon">ⓘ</span>
                         @mcpServerFeedback
                     </div>
                 }
@@ -458,7 +450,6 @@
             <div class="mcp-query-section">
                 <div class="mcp-section-heading d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="mcp-heading-icon">✎</div>
                         <div>
                             <h5 class="mb-0">Consultas MCP</h5>
                             <span>Escribe una instrucción para el servidor</span>
@@ -471,17 +462,17 @@
                         <button type="button" 
                                 class="btn btn-sm py-1 px-2 rounded-2 fw-semibold border-0 @(selectedProvider == "gemini" ? "bg-dark text-white" : "text-secondary")"
                                 @onclick="@(() => SetProvider("gemini"))">
-                            ✦ Gemini
+                            Gemini
                         </button>
                         <button type="button" 
                                 class="btn btn-sm py-1 px-2 rounded-2 fw-semibold border-0 @(selectedProvider == "qwen" ? "bg-dark text-white" : "text-secondary")"
                                 @onclick="@(() => SetProvider("qwen"))">
-                            ⚡ Qwen 3.8
+                            Qwen 3.8
                         </button>
                         <button type="button" 
                                 class="btn btn-sm py-1 px-2 rounded-2 fw-semibold border-0 @(selectedProvider == "gpt-oss" ? "bg-dark text-white" : "text-secondary")"
                                 @onclick="@(() => SetProvider("gpt-oss"))">
-                            🤖 GPT-OSS 120B
+                            GPT-OSS 120B
                         </button>
                     </div>
                 </div>
@@ -570,12 +561,10 @@
             <!-- MONITOR DE INTELIGENCIAS ARTIFICIALES -->
             <div class="mcp-section">
                 <div class="mcp-section-heading">
-                    <div class="mcp-heading-icon">◈</div>
                     <div>
                         <h5>Monitor de IAs</h5>
                         <span>Consumo de tokens por plataforma</span>
                     </div>
-                    <span class="mcp-live-indicator" style="color: #10b981; font-weight: 700;">● EN VIVO</span>
                 </div>
 
                 <div class="mcp-ai-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
@@ -586,9 +575,6 @@
                         {
                             <div class="mcp-ai-card">
                                 <div class="mcp-ai-name">
-                                    <span class="mcp-ai-icon @(prov.Provider == "gemini" ? "gemini-icon" : "")" style="@(prov.Provider != "gemini" ? "color: #f97316;" : "")">
-                                        @(prov.Provider == "gemini" ? "✦" : (prov.Provider == "qwen" ? "⚡" : "🤖"))
-                                    </span>
                                     <span>@prov.DisplayName</span>
                                     <span class="badge @(prov.IsConfigured ? "bg-success" : "bg-warning") text-white px-2 py-0" style="font-size: 0.68rem;">
                                         @(prov.IsConfigured ? "ACTIVO" : "SIN CLAVE")
@@ -611,7 +597,6 @@
                         <!-- GEMINI POR DEFECTO -->
                         <div class="mcp-ai-card">
                             <div class="mcp-ai-name">
-                                <span class="mcp-ai-icon gemini-icon">✦</span>
                                 <span>Google Gemini</span>
                                 <span class="badge @(usageSummary?.IsConfigured == true ? "bg-success" : "bg-warning") text-white px-2 py-0" style="font-size: 0.68rem;">
                                     @(usageSummary?.IsConfigured == true ? "ACTIVO" : "SIN CLAVE")
@@ -631,7 +616,6 @@
                         <!-- QWEN 3.8 -->
                         <div class="mcp-ai-card">
                             <div class="mcp-ai-name">
-                                <span class="mcp-ai-icon" style="color: #f97316;">⚡</span>
                                 <span>Qwen 3.8</span>
                                 <span class="badge bg-success text-white px-2 py-0" style="font-size: 0.68rem;">ACTIVO</span>
                             </div>
@@ -647,7 +631,6 @@
                         <!-- GPT-OSS 120B -->
                         <div class="mcp-ai-card">
                             <div class="mcp-ai-name">
-                                <span class="mcp-ai-icon" style="color: #6366f1;">🤖</span>
                                 <span>GPT-OSS 120B</span>
                                 <span class="badge bg-success text-white px-2 py-0" style="font-size: 0.68rem;">ACTIVO</span>
                             </div>
