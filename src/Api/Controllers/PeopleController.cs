@@ -1,3 +1,4 @@
+using System.Linq;
 using Api.Data;
 using Api.DTOs;
 using Api.Models;
@@ -58,6 +59,59 @@ public class PeopleController : ControllerBase
             .ToListAsync();
 
         return Ok(list); // Retorna HTTP 200 OK con la lista en formato JSON
+    }
+
+    // GET: api/people/report/pdf
+    // Genera el reporte oficial de personas en formato PDF utilizando PdfSharpCore.
+    // Replica el formato de la vista de lista: ID, Nombre Completo y Edad.
+    [HttpGet("report/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPdfReport([FromQuery] string? search)
+    {
+        IQueryable<Person> query = _context.People.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var trimmedSearch = search.Trim();
+            query = query
+                .Where(p => EF.Functions.ILike(p.Name, $"%{trimmedSearch}%"))
+                .OrderBy(p => p.Name);
+        }
+        else
+        {
+            query = query.OrderBy(p => p.Id);
+        }
+
+        var people = await query.ToListAsync();
+
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Windows";
+        var isWindows = env.Equals("Windows", StringComparison.OrdinalIgnoreCase);
+        var serverName = isWindows ? "Windows Server (Local)" : "Ubuntu Server (AWS Cloud)";
+        var dbName = isWindows ? "crud_windows_forms_win" : "crud_windows_forms";
+
+        var pdfBytes = Api.Services.PdfReportService.GeneratePeopleReport(people, serverName, dbName, search);
+        var fileName = $"Reporte_Personas_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
+    public record GeneratePdfCustomRequest(List<Person>? People, string? ServerName, string? DatabaseName, string? Search);
+
+    // POST: api/people/report/pdf/generate
+    // Permite generar el reporte PDF pasando los datos explícitamente.
+    // Sirve como fallback transparente cuando el servidor remoto (ej: VPS Ubuntu) aún no ha recompilado el endpoint nativo.
+    [HttpPost("report/pdf/generate")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public IActionResult GenerateCustomPdfReport([FromBody] GeneratePdfCustomRequest request)
+    {
+        var people = request.People ?? new List<Person>();
+        var serverName = string.IsNullOrWhiteSpace(request.ServerName) ? "Ubuntu Server (AWS Cloud)" : request.ServerName;
+        var dbName = string.IsNullOrWhiteSpace(request.DatabaseName) ? "crud_windows_forms_ubu" : request.DatabaseName;
+
+        var pdfBytes = Api.Services.PdfReportService.GeneratePeopleReport(people, serverName, dbName, request.Search);
+        var fileName = $"Reporte_Personas_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     // GET: api/people/{id}

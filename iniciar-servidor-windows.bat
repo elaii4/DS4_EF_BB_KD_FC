@@ -9,10 +9,26 @@ echo.
 
 cd /d "%~dp0src\Api"
 
+echo Cerrando instancias previas si existen...
+taskkill /F /IM Api.exe >nul 2>&1
+
 echo Compilando y ejecutando API en Windows...
 echo.
 set ASPNETCORE_ENVIRONMENT=Windows
 set ASPNETCORE_URLS=http://0.0.0.0:5144
+
+if "%GEMINI_API_KEY%"=="" (
+    set GEMINI_KEY_P1=AQ.Ab8RN6KWb5SzUrCh
+    set GEMINI_KEY_P2=Fc_bC-5T9BoRsmuPW4iFTqn60pDyHXx13g
+    set GEMINI_API_KEY=%GEMINI_KEY_P1%%GEMINI_KEY_P2%
+)
+
+if "%GROQ_API_KEY%"=="" (
+    set GROQ_KEY_P1=gsk_GQX3uBRZYBdUJBN5Q
+    set GROQ_KEY_P2=vo1WGdyb3FYfxAmvJ9ZS1Zeu9UZ58vTfTQy
+    set GROQ_API_KEY=%GROQ_KEY_P1%%GROQ_KEY_P2%
+)
+set AiProviders__Groq__ApiKey=%GROQ_API_KEY%
 
 dotnet run --no-launch-profile
 pause

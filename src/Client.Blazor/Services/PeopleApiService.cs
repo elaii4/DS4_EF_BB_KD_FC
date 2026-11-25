@@ -179,4 +179,106 @@ public class PeopleApiService
             throw new Exception($"Error al eliminar en {CurrentServer}: {ex.Message}", ex);
         }
     }
+
+    public string GetReportPdfUrl(string? search = null)
+    {
+        var endpoint = $"{CurrentBaseUrl}api/people/report/pdf";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            endpoint += $"?search={Uri.EscapeDataString(search.Trim())}";
+        }
+        return endpoint;
+    }
+
+    public async Task<byte[]> DownloadReportPdfBytesAsync(string? search = null)
+    {
+        var endpoint = GetReportPdfUrl(search);
+        try
+        {
+            var response = await _http.GetAsync(endpoint);
+
+            // Si el servidor activo (ej: VPS Ubuntu) responde 404 porque aún no ha desplegado el endpoint nativo:
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Fallback transparente: obtenemos los datos actuales y generamos el PDF usando el endpoint generador local
+                var people = await GetPeopleAsync(search);
+                var fallbackPayload = new
+                {
+                    People = people,
+                    ServerName = CurrentServer == ServerTarget.Ubuntu ? "Ubuntu Server (AWS Cloud)" : "Windows Server (Local)",
+                    DatabaseName = CurrentServer == ServerTarget.Ubuntu ? "crud_windows_forms_ubu" : "crud_windows_forms_win",
+                    Search = search
+                };
+
+                var fallbackUrl = $"{WindowsUrl}api/people/report/pdf/generate";
+                var localResponse = await _http.PostAsJsonAsync(fallbackUrl, fallbackPayload);
+                if (localResponse.IsSuccessStatusCode)
+                {
+                    return await localResponse.Content.ReadAsByteArrayAsync();
+                }
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new Exception($"Error al generar el reporte en {CurrentServer}: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<McpQueryResponseDto> SendMcpQueryAsync(string prompt, string provider = "gemini")
+    {
+        var endpoint = $"{CurrentBaseUrl}api/mcp/query";
+        var payload = new McpQueryRequestDto
+        {
+            Prompt = prompt,
+            Provider = provider,
+            Target = CurrentServer == ServerTarget.Windows ? "windows" : "ubuntu"
+        };
+
+        try
+        {
+            var response = await _http.PostAsJsonAsync(endpoint, payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                return new McpQueryResponseDto
+                {
+                    IsSuccess = false,
+                    Reply = $"Error al enviar consulta a {CurrentServer} ({response.StatusCode}): {errorBody}",
+                    ErrorMessage = errorBody
+                };
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<McpQueryResponseDto>();
+            return result ?? new McpQueryResponseDto
+            {
+                IsSuccess = false,
+                Reply = "Respuesta vacía recibida del servidor."
+            };
+        }
+        catch (Exception ex)
+        {
+            return new McpQueryResponseDto
+            {
+                IsSuccess = false,
+                Reply = $"Error de conexión con el servidor activo ({CurrentServer}): {ex.Message}",
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    public async Task<McpUsageSummaryDto?> GetMcpUsageAsync(string provider = "gemini")
+    {
+        var endpoint = $"{CurrentBaseUrl}api/mcp/usage?provider={provider}";
+        try
+        {
+            return await _http.GetFromJsonAsync<McpUsageSummaryDto>(endpoint);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

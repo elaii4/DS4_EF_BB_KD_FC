@@ -1,21 +1,20 @@
 @echo off
-title Tunel Cloudflare - Servidor Windows (Puerto 5144)
+title Tunel Cloudflare - Servidor Windows (Puerto 25545)
 chcp 65001 > nul
 echo ===================================================================
-echo   INICIANDO TÚNEL PÚBLICO PARA EL SERVIDOR WINDOWS (Puerto 5144)
+echo   INICIANDO TUNEL CLOUDFLARE PARA WINDOWS (Puerto 25545)
+echo   Permite a tus companeros conectarse a tu API de Windows
 echo ===================================================================
 echo.
 
-cd /d "%~dp0"
-
-if not exist cloudflared.exe (
-    echo Descargando herramienta oficial de Cloudflare...
-    curl -L --fail -o cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+if not exist "%~dp0cloudflared.exe" (
+    echo [AVISO] Descargando cloudflared.exe oficial de Cloudflare...
+    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile '%~dp0cloudflared.exe'"
 )
 
 echo.
-echo Iniciando túnel... Copia la dirección que termine en .trycloudflare.com
+echo Conectando puerto 25545 a la red global de Cloudflare...
+echo Copia la URL 'https://xxxx.trycloudflare.com' que aparezca abajo.
 echo.
-cloudflared.exe tunnel --url http://localhost:5144
+"%~dp0cloudflared.exe" tunnel --url http://localhost:25545 --logfile "%~dp0debug.log"
 pause
-
