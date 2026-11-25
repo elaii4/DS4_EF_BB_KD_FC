@@ -43,7 +43,8 @@ public class PostgresToolService : IPostgresToolService
         else
         {
             return _config.GetConnectionString("Ubuntu")
-                ?? "Host=localhost;Port=5432;Database=crud_windows_forms;Username=crud_app;Password=crud_secret_dev_pass";
+                ?? _config.GetConnectionString("Default")
+                ?? "Host=127.0.0.1;Port=5434;Database=crud_windows_forms;Username=crud_app;Password=crud_secret_dev_pass";
         }
     }
 
